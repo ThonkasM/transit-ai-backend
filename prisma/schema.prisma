@@ -1,0 +1,252 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+
+enum Role {
+  CITIZEN    // Ciudadano — solo lectura del mapa y recomendaciones IA
+  ADMIN      // Administrador de línea — gestiona internos, personal y rutas
+  DRIVER     // Chofer — comparte ubicación en tiempo real
+  SUPERADMIN // Alcaldía / plataforma — acceso total
+}
+
+enum TripStatus {
+  ACTIVE    // Chofer presionó "Empezar", bus en ruta
+  COMPLETED // Viaje finalizado normalmente
+  CANCELLED // Viaje cancelado
+}
+
+enum CredentialStatus {
+  PENDING  // Generada por el admin, el chofer aún no ingresó
+  ACTIVE   // El chofer ya inició sesión al menos una vez
+  REVOKED  // Acceso revocado por el admin
+}
+
+// ------------------------------------------------------------
+// USUARIOS Y AUTENTICACIÓN
+// ------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatarUrl    String?
+  role         Role     @default(CITIZEN)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Si el usuario fue creado por un admin de línea
+  createdById  String?
+  createdBy    User?    @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers User[]   @relation("UserCreatedBy")
+
+  // Relaciones según rol
+  managedLine  BusLine? @relation("LineAdmin")  // Si es ADMIN (1 línea por admin)
+  driver       Driver?                           // Si es DRIVER
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------
+// LÍNEAS DE BUS
+// Cada línea tiene exactamente un administrador
+// ------------------------------------------------------------
+
+model BusLine {
+  id          String   @id @default(uuid())
+  name        String                         // Ej: "Línea 72"
+  code        String   @unique               // Ej: "L72"
+  description String?
+  color       String   @default("#FF0000")   // Color hex para el mapa
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  adminId     String   @unique               // Un solo admin por línea
+  admin       User     @relation("LineAdmin", fields: [adminId], references: [id])
+
+  // Relaciones
+  internos    Interno[]
+  routes      Route[]
+  drivers     Driver[]
+
+  @@map("bus_lines")
+}
+
+// ------------------------------------------------------------
+// INTERNOS
+// Unidad operativa numerada dentro de una línea.
+// Ej: Línea 72 → Interno 1, Interno 2, Interno 3
+// ------------------------------------------------------------
+
+model Interno {
+  id           String   @id @default(uuid())
+  busLineId    String
+  busLine      BusLine  @relation(fields: [busLineId], references: [id])
+
+  number       Int                            // Número de interno (1, 2, 3...)
+  plateNumber  String?  @unique               // Placa del vehículo
+  model        String?                        // Ej: "Mercedes-Benz OF-1721"
+  capacity     Int?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // El chofer asignado a este interno (puede cambiar)
+  driver       Driver?
+
+  trips        Trip[]
+
+  // Número de interno único dentro de la misma línea
+  @@unique([busLineId, number])
+  @@map("internos")
+}
+
+// ------------------------------------------------------------
+// CHOFERES
+// Vinculado a un User (rol DRIVER), una BusLine y un Interno.
+// El Admin registra al chofer y el sistema genera sus credenciales.
+// ------------------------------------------------------------
+
+model Driver {
+  id               String           @id @default(uuid())
+
+  userId           String           @unique
+  user             User             @relation(fields: [userId], references: [id])
+
+  busLineId        String
+  busLine          BusLine          @relation(fields: [busLineId], references: [id])
+
+  // Interno asignado actualmente (un chofer ↔ un interno)
+  internoId        String?          @unique
+  interno          Interno?         @relation(fields: [internoId], references: [id])
+
+  licenseNumber    String?          @unique
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Estado de la credencial generada por el admin
+  credentialStatus CredentialStatus @default(PENDING)
+  lastLoginAt      DateTime?
+
+  trips            Trip[]
+
+  @@map("drivers")
+}
+
+// ------------------------------------------------------------
+// RUTAS
+// Una línea puede tener múltiples rutas (ida, vuelta, variante).
+// El admin puede modificar los waypoints desde el panel.
+// ------------------------------------------------------------
+
+model Route {
+  id              String   @id @default(uuid())
+  busLineId       String
+  busLine         BusLine  @relation(fields: [busLineId], references: [id])
+
+  name            String                       // Ej: "Ida — Centro a Plan 3000"
+
+  // Archivo original de la Alcaldía (GeoJSON, KML, CSV, etc.)
+  importedFileUrl String?
+  importedAt      DateTime?
+
+  // Waypoints editables por el admin
+  // Formato: [{ lat: number, lng: number }, ...]
+  waypoints       Json     @default("[]")
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Auditoría: quién editó la ruta por última vez
+  lastEditedById  String?
+
+  stops           Stop[]
+  trips           Trip[]
+
+  @@map("routes")
+}
+
+// ------------------------------------------------------------
+// PARADAS
+// Puntos nombrados con orden definido dentro de una ruta.
+// ------------------------------------------------------------
+
+model Stop {
+  id         String  @id @default(uuid())
+  routeId    String
+  route      Route   @relation(fields: [routeId], references: [id])
+
+  name       String
+  latitude   Float
+  longitude  Float
+  orderIndex Int
+  isActive   Boolean @default(true)
+
+  @@map("stops")
+}
+
+// ------------------------------------------------------------
+// VIAJES (Trip)
+// Se crea al presionar "Empezar" y se cierra al presionar "Finalizar".
+// ------------------------------------------------------------
+
+model Trip {
+  id        String     @id @default(uuid())
+
+  driverId  String
+  driver    Driver     @relation(fields: [driverId], references: [id])
+
+  internoId String
+  interno   Interno    @relation(fields: [internoId], references: [id])
+
+  routeId   String
+  route     Route      @relation(fields: [routeId], references: [id])
+
+  status    TripStatus @default(ACTIVE)
+  startedAt DateTime   @default(now())
+  endedAt   DateTime?
+
+  locations DriverLocation[]
+
+  @@map("trips")
+}
+
+// ------------------------------------------------------------
+// UBICACIONES EN TIEMPO REAL
+// Insertadas cada ~3-5s desde la app del chofer.
+// ------------------------------------------------------------
+
+model DriverLocation {
+  id         String   @id @default(uuid())
+  tripId     String
+  trip       Trip     @relation(fields: [tripId], references: [id])
+
+  latitude   Float
+  longitude  Float
+  heading    Float?   // 0-360° para rotar el ícono del bus en el mapa
+  speed      Float?   // km/h
+
+  recordedAt DateTime @default(now())
+
+  @@index([tripId, recordedAt(sort: Desc)])
+  @@map("driver_locations")
+}
