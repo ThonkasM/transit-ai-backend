@@ -1,25 +1,41 @@
-import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, IsNotEmpty, Matches, MaxLength, Min } from 'class-validator';
 
 export class CrearLineaDto {
-  @IsString()
-  @IsNotEmpty()
-  nombre!: string;
+  @IsNumber()
+  sindicatoId: number;
 
   @IsString()
   @IsNotEmpty()
-  codigo!: string;
+  @MaxLength(100)
+  nombre: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  codigo: string;
 
   @IsString()
   @IsOptional()
   descripcion?: string;
 
-  /** Color en formato hexadecimal (ej: "#00d992") */
-  @IsString()
-  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'color debe ser un hex válido (#RRGGBB)' })
-  @IsOptional()
-  color?: string = '#00d992';
+  @IsNumber()
+  @Min(0)
+  tarifa: number;
 
   @IsString()
-  @IsNotEmpty()
-  adminId!: string;
+  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'color debe ser formato hex (#RRGGBB)' })
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  horaInicioOperacion?: string;
+
+  @IsString()
+  @IsOptional()
+  horaFinOperacion?: string;
+
+  @IsString()
+  @IsOptional()
+  imagenUrl?: string;
 }

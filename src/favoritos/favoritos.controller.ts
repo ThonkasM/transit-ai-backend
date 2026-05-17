@@ -7,33 +7,28 @@ import { ActualizarFavoritoDto } from './dto/actualizar-favorito.dto';
 export class FavoritosController {
   constructor(private readonly favoritosService: FavoritosService) {}
 
-  @Get('usuario/:userId')
-  async obtenerPorUsuario(@Param('userId') userId: string) {
-    const datos = await this.favoritosService.obtenerPorUsuario(userId);
-    return { exito: true, datos, mensaje: 'Favoritos obtenidos correctamente' };
+  @Get('usuario/:usuarioId')
+  async obtenerPorUsuario(@Param('usuarioId') usuarioId: string) {
+    return await this.favoritosService.obtenerPorUsuario(usuarioId);
   }
 
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
-    const datos = await this.favoritosService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Favorito obtenido correctamente' };
+    return await this.favoritosService.obtenerPorId(id);
   }
 
   @Post()
   async crear(@Body() dto: CrearFavoritoDto) {
-    const datos = await this.favoritosService.crear(dto);
-    return { exito: true, datos, mensaje: 'Favorito creado correctamente' };
+    return await this.favoritosService.crear(dto);
   }
 
   @Patch(':id')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarFavoritoDto) {
-    const datos = await this.favoritosService.actualizar(id, dto);
-    return { exito: true, datos, mensaje: 'Favorito actualizado correctamente' };
+    return await this.favoritosService.actualizar(id, dto);
   }
 
   @Delete(':id')
   async eliminar(@Param('id') id: string) {
-    const datos = await this.favoritosService.eliminar(id);
-    return { exito: true, datos, mensaje: 'Favorito eliminado correctamente' };
+    return await this.favoritosService.eliminar(id);
   }
 }

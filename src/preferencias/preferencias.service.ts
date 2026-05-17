@@ -6,25 +6,36 @@ import { ActualizarPreferenciaDto } from './dto/actualizar-preferencia.dto';
 export class PreferenciasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerPorUsuario(userId: string) {
+  async obtenerPorUsuario(usuarioId: string) {
     const preferencia = await this.prisma.userPreference.findUnique({
-      where: { userId },
+      where: { userId: BigInt(usuarioId) },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
-    if (!preferencia) throw new NotFoundException(`Preferencias del usuario ${userId} no encontradas`);
+    if (!preferencia) throw new NotFoundException(`Preferencias del usuario ${usuarioId} no encontradas`);
     return preferencia;
   }
 
-  async upsert(userId: string, dto: ActualizarPreferenciaDto) {
+  async upsert(usuarioId: string, dto: ActualizarPreferenciaDto) {
     return this.prisma.userPreference.upsert({
-      where: { userId },
-      create: { userId, ...dto },
-      update: dto,
+      where: { userId: BigInt(usuarioId) },
+      create: {
+        userId: BigInt(usuarioId),
+        preferredCriteria: dto.criterioPreferido,
+        maxWalkingMeters: dto.maxCaminataMetros ?? 500,
+        maxTransfers: dto.maxTrasbordos ?? 2,
+        learnedPatterns: dto.patronesAprendidos,
+      },
+      update: {
+        ...(dto.criterioPreferido !== undefined && { preferredCriteria: dto.criterioPreferido }),
+        ...(dto.maxCaminataMetros !== undefined && { maxWalkingMeters: dto.maxCaminataMetros }),
+        ...(dto.maxTrasbordos !== undefined && { maxTransfers: dto.maxTrasbordos }),
+        ...(dto.patronesAprendidos !== undefined && { learnedPatterns: dto.patronesAprendidos }),
+      },
     });
   }
 
-  async eliminar(userId: string) {
-    await this.obtenerPorUsuario(userId);
-    return this.prisma.userPreference.delete({ where: { userId } });
+  async eliminar(usuarioId: string) {
+    await this.obtenerPorUsuario(usuarioId);
+    return this.prisma.userPreference.delete({ where: { userId: BigInt(usuarioId) } });
   }
 }

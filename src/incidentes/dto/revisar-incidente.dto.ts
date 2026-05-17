@@ -1,15 +1,14 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
 import { IncidentStatus } from '@prisma/client';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class RevisarIncidenteDto {
   @IsEnum(IncidentStatus)
-  status: IncidentStatus;
+  estado: IncidentStatus;
 
-  @IsString()
-  @IsNotEmpty()
-  reviewedById: string;
+  @IsNumber()
+  revisadoPorId: number;
 
   @IsString()
   @IsOptional()
-  reviewNotes?: string;
+  notasRevision?: string;
 }

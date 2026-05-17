@@ -1,15 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
 import { TransferStatus } from '@prisma/client';
+import { IsEnum, IsNumber } from 'class-validator';
 
-export class DecidirTrasboardoDto {
+export class DecidirTrasborodoDto {
   @IsEnum(TransferStatus)
-  status: TransferStatus;
+  estado: TransferStatus;
 
-  @IsString()
-  @IsNotEmpty()
-  decidedById: string;
-
-  @IsString()
-  @IsOptional()
-  toTripId?: string;
+  @IsNumber()
+  decididoPorId: number;
 }

@@ -3,93 +3,77 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CrearInternoDto } from './dto/crear-interno.dto';
 import { ActualizarInternoDto } from './dto/actualizar-interno.dto';
 
-/**
- * InternosService maneja la lógica de negocio para los internos (vehículos) del sistema.
- * Permite filtrar por línea para que cada administrador vea solo sus vehículos.
- */
 @Injectable()
 export class InternosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Obtiene todos los internos activos.
-   * Si se proporciona busLineId, filtra solo los internos de esa línea.
-   * Útil para que cada administrador vea solo sus vehículos.
-   */
-  async obtenerTodos(busLineId?: string) {
-    return this.prisma.interno.findMany({
+  async obtenerTodos(sindicatoId?: string, lineaId?: string) {
+    return this.prisma.internal.findMany({
       where: {
         deletedAt: null,
-        ...(busLineId ? { busLineId } : {}),
+        active: true,
+        ...(sindicatoId ? { syndicateId: BigInt(sindicatoId) } : {}),
+        ...(lineaId ? { lineId: BigInt(lineaId) } : {}),
       },
       include: {
-        busLine: {
-          select: { id: true, name: true, code: true },
-        },
+        syndicate: { select: { id: true, name: true } },
+        line: { select: { id: true, name: true, code: true } },
       },
+      orderBy: { internalNumber: 'asc' },
     });
   }
 
-  /**
-   * Obtiene un interno específico por su ID.
-   * Lanza NotFoundException si no existe para retornar 404 automáticamente.
-   */
   async obtenerPorId(id: string) {
-    const interno = await this.prisma.interno.findFirst({
-      where: { id, deletedAt: null },
+    const interno = await this.prisma.internal.findFirst({
+      where: { id: BigInt(id), deletedAt: null },
       include: {
-        busLine: {
-          select: { id: true, name: true, code: true },
-        },
+        syndicate: { select: { id: true, name: true } },
+        line: { select: { id: true, name: true, code: true, color: true } },
       },
     });
 
-    if (!interno) {
-      throw new NotFoundException(`Interno con ID ${id} no encontrado`);
-    }
-
+    if (!interno) throw new NotFoundException(`Interno con ID ${id} no encontrado`);
     return interno;
   }
 
-  /**
-   * Crea un nuevo interno (vehículo) en el sistema.
-   * Asocia el vehículo a una línea de transporte específica.
-   */
   async crear(dto: CrearInternoDto) {
-    return this.prisma.interno.create({
+    return this.prisma.internal.create({
       data: {
-        busLineId: dto.busLineId,
-        number: dto.number,
-        plateNumber: dto.plateNumber,
-        model: dto.model,
-        capacity: dto.capacity,
+        syndicateId: BigInt(dto.sindicatoId),
+        lineId: dto.lineaId ? BigInt(dto.lineaId) : null,
+        internalNumber: dto.numeroInterno,
+        licensePlate: dto.placa,
+        model: dto.modelo,
+        manufactureYear: dto.anioFabricacion,
+        capacity: dto.capacidad,
+        gpsDeviceId: dto.idDispositivoGps,
       },
     });
   }
 
-  /**
-   * Actualiza los datos de un interno existente.
-   * Verifica que exista antes de actualizar para evitar errores de Prisma.
-   */
   async actualizar(id: string, dto: ActualizarInternoDto) {
     await this.obtenerPorId(id);
-
-    return this.prisma.interno.update({
-      where: { id },
-      data: dto,
+    return this.prisma.internal.update({
+      where: { id: BigInt(id) },
+      data: {
+        ...(dto.lineaId !== undefined && { lineId: dto.lineaId ? BigInt(dto.lineaId) : null }),
+        ...(dto.numeroInterno !== undefined && { internalNumber: dto.numeroInterno }),
+        ...(dto.placa !== undefined && { licensePlate: dto.placa }),
+        ...(dto.modelo !== undefined && { model: dto.modelo }),
+        ...(dto.anioFabricacion !== undefined && { manufactureYear: dto.anioFabricacion }),
+        ...(dto.capacidad !== undefined && { capacity: dto.capacidad }),
+        ...(dto.idDispositivoGps !== undefined && { gpsDeviceId: dto.idDispositivoGps }),
+        ...(dto.estadoOperacional !== undefined && { operationalStatus: dto.estadoOperacional }),
+        ...(dto.activo !== undefined && { active: dto.activo }),
+      },
     });
   }
 
-  /**
-   * Realiza soft delete del interno estableciendo deletedAt.
-   * Preserva el historial de viajes asociados a este vehículo.
-   */
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-
-    return this.prisma.interno.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+    return this.prisma.internal.update({
+      where: { id: BigInt(id) },
+      data: { deletedAt: new Date(), active: false },
     });
   }
 }

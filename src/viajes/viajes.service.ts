@@ -2,144 +2,138 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { IniciarViajeDto } from './dto/iniciar-viaje.dto';
 import { UbicacionDto } from './dto/ubicacion.dto';
+import { FinalizarViajeDto } from './dto/finalizar-viaje.dto';
 
-/**
- * ViajesService maneja la lógica de negocio para los viajes del sistema de transporte.
- * Gestiona el ciclo de vida completo de un viaje: inicio, ubicaciones en tiempo real y finalización.
- */
 @Injectable()
 export class ViajesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Obtiene todos los viajes actualmente activos.
-   * Incluye información del conductor, usuario, vehículo y ruta para mostrar en el mapa.
-   * Solo retorna viajes con status ACTIVE para el monitoreo en tiempo real.
-   */
   async obtenerActivos() {
     return this.prisma.trip.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'IN_PROGRESS' },
       include: {
-        driver: {
+        assignment: {
           include: {
-            user: {
-              select: { id: true, name: true, email: true, avatarUrl: true },
-            },
-          },
-        },
-        interno: {
-          select: { id: true, number: true, plateNumber: true, model: true },
-        },
-        route: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-  }
-
-  /**
-   * Obtiene un viaje específico con las últimas 10 ubicaciones registradas.
-   * Limitar a 10 ubicaciones evita cargar demasiados datos mientras se muestra el historial reciente.
-   * Lanza NotFoundException si el viaje no existe.
-   */
-  async obtenerPorId(id: string) {
-    const viaje = await this.prisma.trip.findUnique({
-      where: { id },
-      include: {
-        driver: {
-          include: {
-            user: {
-              select: { id: true, name: true, email: true, avatarUrl: true },
-            },
-          },
-        },
-        interno: true,
-        route: {
-          include: {
-            routeStops: {
-              orderBy: { orderIndex: 'asc' },
-              include: { stop: true },
-            },
+            driver: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+            internal: { select: { id: true, internalNumber: true, licensePlate: true, model: true } },
+            route: { select: { id: true, name: true, direction: true } },
           },
         },
         locations: {
           orderBy: { recordedAt: 'desc' },
-          take: 10,
+          take: 1,
+        },
+      },
+    });
+  }
+
+  async obtenerPorId(id: string) {
+    const viaje = await this.prisma.trip.findUnique({
+      where: { id: BigInt(id) },
+      include: {
+        assignment: {
+          include: {
+            driver: { include: { user: { select: { id: true, name: true, email: true, avatarUrl: true } } } },
+            internal: { select: { id: true, internalNumber: true, licensePlate: true, model: true, capacity: true } },
+            route: { select: { id: true, name: true, direction: true } },
+            shift: { select: { id: true, name: true } },
+          },
+        },
+        locations: {
+          orderBy: { recordedAt: 'desc' },
+          take: 20,
+        },
+        incidents: {
+          where: { status: { not: 'CLOSED' } },
+          select: { id: true, type: true, status: true, reportedAt: true },
         },
       },
     });
 
-    if (!viaje) {
-      throw new NotFoundException(`Viaje con ID ${id} no encontrado`);
-    }
-
+    if (!viaje) throw new NotFoundException(`Viaje con ID ${id} no encontrado`);
     return viaje;
   }
 
-  /**
-   * Inicia un nuevo viaje creando el registro en la base de datos con status ACTIVE.
-   * Registra el tiempo de inicio para calcular duración al finalizar.
-   */
   async iniciar(dto: IniciarViajeDto) {
+    const asignacion = await this.prisma.dailyAssignment.findUnique({
+      where: { id: BigInt(dto.asignacionId) },
+    });
+
+    if (!asignacion) throw new NotFoundException(`Asignación con ID ${dto.asignacionId} no encontrada`);
+    if (asignacion.status === 'CANCELLED') throw new BadRequestException('La asignación está cancelada');
+
     return this.prisma.trip.create({
       data: {
-        driverId: dto.driverId,
-        internoId: dto.internoId,
-        routeId: dto.routeId,
-        status: 'ACTIVE',
-        startedAt: new Date(),
+        assignmentId: BigInt(dto.asignacionId),
+        driverId: asignacion.driverId,
+        busId: asignacion.busId,
+        routeId: asignacion.routeId,
+        status: 'IN_PROGRESS',
       },
     });
   }
 
-  async finalizar(id: string) {
-    const viaje = await this.obtenerPorId(id);
+  async finalizar(id: string, dto: FinalizarViajeDto) {
+    const viaje = await this.prisma.trip.findUnique({
+      where: { id: BigInt(id) },
+      select: { status: true },
+    });
 
-    if (viaje.status !== 'ACTIVE') {
-      throw new BadRequestException(`El viaje ya está en estado ${viaje.status}`);
-    }
+    if (!viaje) throw new NotFoundException(`Viaje con ID ${id} no encontrado`);
+    if (viaje.status !== 'IN_PROGRESS') throw new BadRequestException(`El viaje ya está en estado ${viaje.status}`);
 
     return this.prisma.trip.update({
-      where: { id },
-      data: { status: 'COMPLETED', endedAt: new Date() },
+      where: { id: BigInt(id) },
+      data: {
+        status: 'COMPLETED',
+        endReason: dto.razonFin ?? 'COMPLETED_ROUTE',
+        averageSpeed: dto.velocidadPromedio,
+        finishedAt: new Date(),
+      },
     });
   }
 
   async cancelar(id: string) {
-    const viaje = await this.obtenerPorId(id);
+    const viaje = await this.prisma.trip.findUnique({
+      where: { id: BigInt(id) },
+      select: { status: true },
+    });
 
-    if (viaje.status !== 'ACTIVE') {
-      throw new BadRequestException(`El viaje ya está en estado ${viaje.status}`);
-    }
+    if (!viaje) throw new NotFoundException(`Viaje con ID ${id} no encontrado`);
+    if (viaje.status !== 'IN_PROGRESS') throw new BadRequestException(`El viaje ya está en estado ${viaje.status}`);
 
     return this.prisma.trip.update({
-      where: { id },
-      data: { status: 'CANCELLED', endedAt: new Date() },
+      where: { id: BigInt(id) },
+      data: { status: 'CANCELLED', endReason: 'OTHER', finishedAt: new Date() },
     });
   }
 
   async registrarUbicacion(dto: UbicacionDto) {
     const viaje = await this.prisma.trip.findUnique({
-      where: { id: dto.tripId },
+      where: { id: BigInt(dto.viajeId) },
       select: { status: true },
     });
 
-    if (!viaje) {
-      throw new NotFoundException(`Viaje con ID ${dto.tripId} no encontrado`);
-    }
-
-    if (viaje.status !== 'ACTIVE') {
-      throw new BadRequestException('Solo se pueden registrar ubicaciones en viajes activos');
-    }
+    if (!viaje) throw new NotFoundException(`Viaje con ID ${dto.viajeId} no encontrado`);
+    if (viaje.status !== 'IN_PROGRESS') throw new BadRequestException('Solo se pueden registrar ubicaciones en viajes activos');
 
     return this.prisma.driverLocation.create({
       data: {
-        tripId: dto.tripId,
+        tripId: BigInt(dto.viajeId),
         latitude: dto.latitud,
         longitude: dto.longitud,
-        heading: dto.heading,
-        speed: dto.speed,
+        heading: dto.rumbo,
+        speed: dto.velocidad,
+        accuracyMeters: dto.precisionMetros,
+        batteryLevel: dto.nivelBateria,
       },
+    });
+  }
+
+  async obtenerUltimaUbicacion(viajeId: string) {
+    return this.prisma.driverLocation.findFirst({
+      where: { tripId: BigInt(viajeId) },
+      orderBy: { recordedAt: 'desc' },
     });
   }
 }

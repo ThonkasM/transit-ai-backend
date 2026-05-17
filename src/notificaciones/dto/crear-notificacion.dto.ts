@@ -1,38 +1,42 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
-import { NotificationType, Role } from '@prisma/client';
+import { NotificationType, UserRole } from '@prisma/client';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+} from 'class-validator';
 
 export class CrearNotificacionDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  @MaxLength(200)
+  titulo: string;
 
   @IsString()
   @IsNotEmpty()
-  body: string;
-
-  @IsString()
-  @IsOptional()
-  content?: string;
+  cuerpo: string;
 
   @IsEnum(NotificationType)
-  type: NotificationType;
+  tipo: NotificationType;
 
   @IsOptional()
-  data?: any;
+  datos?: any;
 
-  @IsEnum(Role)
+  @IsEnum(UserRole)
   @IsOptional()
-  targetRole?: Role;
+  rolDestino?: UserRole;
+
+  @IsNumber()
+  @IsOptional()
+  usuarioDestinoId?: number;
+
+  @IsNumber()
+  @IsOptional()
+  creadoPorId?: number;
 
   @IsString()
   @IsOptional()
-  targetUserId?: string;
-
-  @IsString()
-  @IsOptional()
-  createdById?: string;
-
-  @IsString()
-  @IsOptional()
-  expiresAt?: string;
+  expiraEn?: string;
 }

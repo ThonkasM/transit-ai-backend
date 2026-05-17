@@ -1,24 +1,38 @@
-import { IsString, IsNumber, IsOptional, IsNotEmpty, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength, Min } from 'class-validator';
 
 export class CrearInternoDto {
+  @IsNumber()
+  sindicatoId: number;
+
+  @IsNumber()
+  @IsOptional()
+  lineaId?: number;
+
   @IsString()
   @IsNotEmpty()
-  busLineId!: string;
+  @MaxLength(10)
+  numeroInterno: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(15)
+  placa: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  modelo: string;
+
+  @IsNumber()
+  @IsOptional()
+  anioFabricacion?: number;
 
   @IsNumber()
   @Min(1)
-  number!: number;
+  capacidad: number;
 
   @IsString()
   @IsOptional()
-  plateNumber?: string;
-
-  @IsString()
-  @IsOptional()
-  model?: string;
-
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  capacity?: number;
+  @MaxLength(50)
+  idDispositivoGps?: string;
 }

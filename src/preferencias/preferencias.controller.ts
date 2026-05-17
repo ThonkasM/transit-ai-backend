@@ -6,21 +6,21 @@ import { ActualizarPreferenciaDto } from './dto/actualizar-preferencia.dto';
 export class PreferenciasController {
   constructor(private readonly preferenciasService: PreferenciasService) {}
 
-  @Get(':userId')
-  async obtenerPorUsuario(@Param('userId') userId: string) {
-    const datos = await this.preferenciasService.obtenerPorUsuario(userId);
-    return { exito: true, datos, mensaje: 'Preferencias obtenidas correctamente' };
+  @Get(':usuarioId')
+  async obtenerPorUsuario(@Param('usuarioId') usuarioId: string) {
+    return await this.preferenciasService.obtenerPorUsuario(usuarioId);
   }
 
-  @Put(':userId')
-  async upsert(@Param('userId') userId: string, @Body() dto: ActualizarPreferenciaDto) {
-    const datos = await this.preferenciasService.upsert(userId, dto);
-    return { exito: true, datos, mensaje: 'Preferencias actualizadas correctamente' };
+  @Put(':usuarioId')
+  async upsert(
+    @Param('usuarioId') usuarioId: string,
+    @Body() dto: ActualizarPreferenciaDto,
+  ) {
+    return await this.preferenciasService.upsert(usuarioId, dto);
   }
 
-  @Delete(':userId')
-  async eliminar(@Param('userId') userId: string) {
-    const datos = await this.preferenciasService.eliminar(userId);
-    return { exito: true, datos, mensaje: 'Preferencias eliminadas correctamente' };
+  @Delete(':usuarioId')
+  async eliminar(@Param('usuarioId') usuarioId: string) {
+    return await this.preferenciasService.eliminar(usuarioId);
   }
 }

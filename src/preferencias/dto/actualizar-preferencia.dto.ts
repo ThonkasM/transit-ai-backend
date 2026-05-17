@@ -1,19 +1,21 @@
-import { IsOptional, IsNumber, IsEnum } from 'class-validator';
-import { JourneyCriteria } from '@prisma/client';
+import { IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class ActualizarPreferenciaDto {
-  @IsEnum(JourneyCriteria)
+  @IsString()
   @IsOptional()
-  preferredCriteria?: JourneyCriteria;
+  @MaxLength(50)
+  criterioPreferido?: string;
 
   @IsNumber()
+  @Min(0)
   @IsOptional()
-  maxWalkMeters?: number;
+  maxCaminataMetros?: number;
 
   @IsNumber()
+  @Min(0)
   @IsOptional()
-  maxTransfers?: number;
+  maxTrasbordos?: number;
 
   @IsOptional()
-  learnedPatterns?: any;
+  patronesAprendidos?: any;
 }

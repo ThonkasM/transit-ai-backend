@@ -1,26 +1,34 @@
-import { IsString, IsOptional, IsArray, IsNotEmpty, IsNumber, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
-
-class WaypointDto {
-  @IsNumber()
-  lat!: number;
-
-  @IsNumber()
-  lng!: number;
-}
+import { RouteDirection } from '@prisma/client';
+import { IsEnum, IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength, Min } from 'class-validator';
 
 export class CrearRutaDto {
-  @IsString()
-  @IsNotEmpty()
-  busLineId!: string;
+  @IsNumber()
+  lineaId: number;
 
   @IsString()
   @IsNotEmpty()
-  nombre!: string;
+  @MaxLength(150)
+  nombre: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => WaypointDto)
+  @IsEnum(RouteDirection)
+  direccion: RouteDirection;
+
+  @IsString()
   @IsOptional()
-  waypoints?: WaypointDto[] = [];
+  archivoImportadoUrl?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  distanciaKm?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tiempoEstimadoMin?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tiempoDescansoMin?: number;
 }

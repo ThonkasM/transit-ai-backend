@@ -1,52 +1,39 @@
-import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
 import { ViajesService } from './viajes.service';
 import { IniciarViajeDto } from './dto/iniciar-viaje.dto';
+import { FinalizarViajeDto } from './dto/finalizar-viaje.dto';
 
-/**
- * ViajesController expone los endpoints REST para gestionar viajes.
- * Los eventos en tiempo real (ubicación GPS) se manejan vía WebSocket en ViajesGateway.
- * Este controlador maneja las operaciones de gestión: iniciar, finalizar y consultar.
- */
 @Controller('viajes')
 export class ViajesController {
   constructor(private readonly viajesService: ViajesService) {}
 
-  /** Retorna todos los viajes actualmente activos con información del conductor y ruta */
   @Get('activos')
   async obtenerActivos() {
-    const datos = await this.viajesService.obtenerActivos();
-    return {
-      exito: true,
-      datos,
-      mensaje: 'Viajes activos obtenidos correctamente',
-    };
+    return await this.viajesService.obtenerActivos();
   }
 
-  /** Retorna un viaje específico con sus últimas 10 ubicaciones registradas */
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
-    const datos = await this.viajesService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Viaje obtenido correctamente' };
+    return await this.viajesService.obtenerPorId(id);
   }
 
-  /** Inicia un nuevo viaje asignando conductor, vehículo y ruta */
+  @Get(':id/ubicacion')
+  async obtenerUltimaUbicacion(@Param('id') id: string) {
+    return await this.viajesService.obtenerUltimaUbicacion(id);
+  }
+
   @Post('iniciar')
   async iniciar(@Body() dto: IniciarViajeDto) {
-    const datos = await this.viajesService.iniciar(dto);
-    return { exito: true, datos, mensaje: 'Viaje iniciado correctamente' };
+    return await this.viajesService.iniciar(dto);
   }
 
-  /** Finaliza un viaje activo marcándolo como completado */
   @Patch(':id/finalizar')
-  async finalizar(@Param('id') id: string) {
-    const datos = await this.viajesService.finalizar(id);
-    return { exito: true, datos, mensaje: 'Viaje finalizado correctamente' };
+  async finalizar(@Param('id') id: string, @Body() dto: FinalizarViajeDto) {
+    return await this.viajesService.finalizar(id, dto);
   }
 
-  /** Cancela un viaje activo marcándolo como cancelado */
   @Patch(':id/cancelar')
   async cancelar(@Param('id') id: string) {
-    const datos = await this.viajesService.cancelar(id);
-    return { exito: true, datos, mensaje: 'Viaje cancelado correctamente' };
+    return await this.viajesService.cancelar(id);
   }
 }

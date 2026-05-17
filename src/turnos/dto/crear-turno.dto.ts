@@ -1,30 +1,26 @@
-import { IsString, IsNotEmpty, IsArray, IsOptional, IsBoolean } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength, Min } from 'class-validator';
 
 export class CrearTurnoDto {
   @IsString()
-  @IsNotEmpty()
-  driverId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  internoId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  routeId: string;
-
-  @IsArray()
-  daysOfWeek: number[];
-
-  @IsString()
-  @IsNotEmpty()
-  startTime: string;
-
-  @IsString()
-  @IsNotEmpty()
-  endTime: string;
-
-  @IsBoolean()
   @IsOptional()
-  isActive?: boolean;
+  @MaxLength(50)
+  nombre?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(20)
+  diasSemana: string;
+
+  @IsString()
+  @IsNotEmpty()
+  horaInicio: string;
+
+  @IsString()
+  @IsNotEmpty()
+  horaFin: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  vueltasEsperadas?: number;
 }

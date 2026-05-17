@@ -1,26 +1,32 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsDateString } from 'class-validator';
+import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CrearAsignacionDto {
+  @IsNumber()
+  sindicatoId: number;
+
+  @IsNumber()
+  conductorId: number;
+
+  @IsNumber()
+  busId: number;
+
+  @IsNumber()
+  rutaId: number;
+
+  @IsNumber()
+  @IsOptional()
+  turnoId?: number;
+
   @IsDateString()
-  date: string;
+  fecha: string;
 
   @IsString()
-  @IsNotEmpty()
-  internoId: string;
+  horaInicio: string;
 
   @IsString()
-  @IsNotEmpty()
-  routeId: string;
+  horaFin: string;
 
   @IsString()
   @IsOptional()
-  assignedById?: string;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+  notas?: string;
 }

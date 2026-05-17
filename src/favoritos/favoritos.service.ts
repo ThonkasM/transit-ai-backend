@@ -7,43 +7,59 @@ import { ActualizarFavoritoDto } from './dto/actualizar-favorito.dto';
 export class FavoritosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerPorUsuario(userId: string) {
-    return this.prisma.savedJourney.findMany({
-      where: { userId, isActive: true },
+  async obtenerPorUsuario(usuarioId: string) {
+    return this.prisma.favoriteTrip.findMany({
+      where: { userId: BigInt(usuarioId), active: true },
       orderBy: { updatedAt: 'desc' },
     });
   }
 
   async obtenerPorId(id: string) {
-    const favorito = await this.prisma.savedJourney.findFirst({ where: { id } });
+    const favorito = await this.prisma.favoriteTrip.findFirst({
+      where: { id: BigInt(id) },
+      include: { user: { select: { id: true, name: true } } },
+    });
     if (!favorito) throw new NotFoundException(`Favorito con ID ${id} no encontrado`);
     return favorito;
   }
 
   async crear(dto: CrearFavoritoDto) {
-    return this.prisma.savedJourney.create({
+    return this.prisma.favoriteTrip.create({
       data: {
-        userId: dto.userId,
+        userId: BigInt(dto.usuarioId),
         alias: dto.alias,
-        fromLat: dto.fromLat,
-        fromLng: dto.fromLng,
-        fromLabel: dto.fromLabel,
-        toLat: dto.toLat,
-        toLng: dto.toLng,
-        toLabel: dto.toLabel,
-        isActive: dto.isActive ?? true,
+        originLatitude: dto.latitudOrigen,
+        originLongitude: dto.longitudOrigen,
+        originLabel: dto.etiquetaOrigen,
+        destinationLatitude: dto.latitudDestino,
+        destinationLongitude: dto.longitudDestino,
+        destinationLabel: dto.etiquetaDestino,
       },
     });
   }
 
   async actualizar(id: string, dto: ActualizarFavoritoDto) {
     await this.obtenerPorId(id);
-    const { userId, ...rest } = dto;
-    return this.prisma.savedJourney.update({ where: { id }, data: rest });
+    return this.prisma.favoriteTrip.update({
+      where: { id: BigInt(id) },
+      data: {
+        ...(dto.alias !== undefined && { alias: dto.alias }),
+        ...(dto.latitudOrigen !== undefined && { originLatitude: dto.latitudOrigen }),
+        ...(dto.longitudOrigen !== undefined && { originLongitude: dto.longitudOrigen }),
+        ...(dto.etiquetaOrigen !== undefined && { originLabel: dto.etiquetaOrigen }),
+        ...(dto.latitudDestino !== undefined && { destinationLatitude: dto.latitudDestino }),
+        ...(dto.longitudDestino !== undefined && { destinationLongitude: dto.longitudDestino }),
+        ...(dto.etiquetaDestino !== undefined && { destinationLabel: dto.etiquetaDestino }),
+        ...(dto.activo !== undefined && { active: dto.activo }),
+      },
+    });
   }
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.savedJourney.delete({ where: { id } });
+    return this.prisma.favoriteTrip.update({
+      where: { id: BigInt(id) },
+      data: { active: false },
+    });
   }
 }

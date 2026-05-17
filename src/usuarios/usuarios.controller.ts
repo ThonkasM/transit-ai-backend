@@ -1,56 +1,35 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  Query,
-} from '@nestjs/common';
-import { $Enums } from '@prisma/client';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { UsuariosService } from './usuarios.service';
-import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
+import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 
 @Controller('usuarios')
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
-  @Post()
-  async crear(@Body() dto: CrearUsuarioDto) {
-    const datos = await this.usuariosService.crear(dto);
-    return { exito: true, datos, mensaje: 'Usuario creado correctamente' };
-  }
-
   @Get()
-  async obtenerTodos(@Query('role') role?: string) {
-    const datos = await this.usuariosService.obtenerTodos(role as $Enums.Role);
-    return {
-      exito: true,
-      datos,
-      mensaje: 'Usuarios obtenidos correctamente',
-    };
+  async obtenerTodos(@Query('rol') rol?: string, @Query('sindicatoId') sindicatoId?: string) {
+    return await this.usuariosService.obtenerTodos(rol as UserRole, sindicatoId);
   }
 
-  /** Retorna un usuario específico con sus cuentas OAuth e info de conductor */
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
-    const datos = await this.usuariosService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Usuario obtenido correctamente' };
+    return await this.usuariosService.obtenerPorId(id);
   }
 
-  /** Actualiza el perfil de un usuario (nombre, teléfono, avatar, rol) */
+  @Post()
+  async crear(@Body() dto: CrearUsuarioDto) {
+    return await this.usuariosService.crear(dto);
+  }
+
   @Patch(':id')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarUsuarioDto) {
-    const datos = await this.usuariosService.actualizar(id, dto);
-    return { exito: true, datos, mensaje: 'Usuario actualizado correctamente' };
+    return await this.usuariosService.actualizar(id, dto);
   }
 
-  /** Elimina (soft delete) un usuario del sistema */
   @Delete(':id')
   async eliminar(@Param('id') id: string) {
-    const datos = await this.usuariosService.eliminar(id);
-    return { exito: true, datos, mensaje: 'Usuario eliminado correctamente' };
+    return await this.usuariosService.eliminar(id);
   }
 }

@@ -1,27 +1,37 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength } from 'class-validator';
 
-/**
- * DTO para registrar un nuevo conductor en el sistema.
- * Vincula a un usuario existente con una línea de transporte.
- */
 export class CrearConductorDto {
-  /** ID del usuario (de la tabla User) que será el conductor */
+  @IsNumber()
+  usuarioId: number;
+
+  @IsNumber()
+  sindicatoId: number;
+
+  @IsNumber()
+  @IsOptional()
+  lineaId?: number;
+
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  @MaxLength(20)
+  cedulaIdentidad: string;
 
-  /** ID de la línea de transporte a la que está asignado el conductor */
+  @IsString()
+  @IsOptional()
+  @MaxLength(5)
+  extensionCI?: string;
+
   @IsString()
   @IsNotEmpty()
-  busLineId: string;
+  @MaxLength(30)
+  numeroLicencia: string;
 
-  /** ID del interno (vehículo) asignado al conductor (opcional, se puede asignar después) */
   @IsString()
-  @IsOptional()
-  internoId?: string;
+  @IsNotEmpty()
+  @MaxLength(5)
+  categoriaLicencia: string;
 
-  /** Número de licencia de conducir del conductor */
   @IsString()
-  @IsOptional()
-  licenseNumber?: string;
+  @IsNotEmpty()
+  vencimientoLicencia: string;
 }

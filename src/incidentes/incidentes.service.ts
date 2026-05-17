@@ -7,11 +7,12 @@ import { RevisarIncidenteDto } from './dto/revisar-incidente.dto';
 export class IncidentesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerTodos(driverId?: string, status?: string) {
+  async obtenerTodos(conductorId?: string, estado?: string, viajeId?: string) {
     return this.prisma.incident.findMany({
       where: {
-        ...(driverId ? { driverId } : {}),
-        ...(status ? { status: status as any } : {}),
+        ...(conductorId ? { driverId: BigInt(conductorId) } : {}),
+        ...(estado ? { status: estado as any } : {}),
+        ...(viajeId ? { tripId: BigInt(viajeId) } : {}),
       },
       include: {
         driver: { include: { user: { select: { id: true, name: true } } } },
@@ -24,7 +25,7 @@ export class IncidentesService {
 
   async obtenerPorId(id: string) {
     const incidente = await this.prisma.incident.findFirst({
-      where: { id },
+      where: { id: BigInt(id) },
       include: {
         driver: { include: { user: { select: { id: true, name: true, email: true } } } },
         trip: { select: { id: true, status: true, startedAt: true } },
@@ -38,13 +39,17 @@ export class IncidentesService {
   async crear(dto: CrearIncidenteDto) {
     return this.prisma.incident.create({
       data: {
-        driverId: dto.driverId,
-        tripId: dto.tripId,
-        type: dto.type,
-        description: dto.description,
-        latitude: dto.latitude,
-        longitude: dto.longitude,
-        requestStopTracking: dto.requestStopTracking ?? false,
+        tripId: BigInt(dto.viajeId),
+        driverId: BigInt(dto.conductorId),
+        type: dto.tipo,
+        description: dto.descripcion,
+        latitude: dto.latitud,
+        longitude: dto.longitud,
+        requestStopTracking: dto.solicitarPausarGps ?? false,
+      },
+      include: {
+        driver: { include: { user: { select: { id: true, name: true } } } },
+        trip: { select: { id: true, status: true } },
       },
     });
   }
@@ -52,19 +57,19 @@ export class IncidentesService {
   async revisar(id: string, dto: RevisarIncidenteDto) {
     await this.obtenerPorId(id);
     return this.prisma.incident.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: {
-        status: dto.status,
-        reviewedById: dto.reviewedById,
+        status: dto.estado,
+        reviewedById: BigInt(dto.revisadoPorId),
         reviewedAt: new Date(),
-        reviewNotes: dto.reviewNotes,
-        ...(dto.status === 'RESOLVED' ? { resolvedAt: new Date() } : {}),
+        reviewNotes: dto.notasRevision,
+        ...(dto.estado === 'RESOLVED' ? { resolvedAt: new Date() } : {}),
       },
     });
   }
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.incident.delete({ where: { id } });
+    return this.prisma.incident.delete({ where: { id: BigInt(id) } });
   }
 }

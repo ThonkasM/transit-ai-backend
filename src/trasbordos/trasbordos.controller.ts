@@ -1,39 +1,34 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { TrasboardosService } from './trasbordos.service';
-import { CrearTrasboardoDto } from './dto/crear-trasbordo.dto';
-import { DecidirTrasboardoDto } from './dto/decidir-trasbordo.dto';
+import { CrearTrasborodoDto } from './dto/crear-trasbordo.dto';
+import { DecidirTrasborodoDto } from './dto/decidir-trasbordo.dto';
 
 @Controller('trasbordos')
 export class TrasboardosController {
   constructor(private readonly trasboardosService: TrasboardosService) {}
 
   @Get()
-  async obtenerTodos(@Query('status') status?: string) {
-    const datos = await this.trasboardosService.obtenerTodos(status);
-    return { exito: true, datos, mensaje: 'Trasbordos obtenidos correctamente' };
+  async obtenerTodos(@Query('estado') estado?: string) {
+    return await this.trasboardosService.obtenerTodos(estado);
   }
 
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
-    const datos = await this.trasboardosService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Trasbordo obtenido correctamente' };
+    return await this.trasboardosService.obtenerPorId(id);
   }
 
   @Post()
-  async crear(@Body() dto: CrearTrasboardoDto) {
-    const datos = await this.trasboardosService.crear(dto);
-    return { exito: true, datos, mensaje: 'Trasbordo sugerido correctamente' };
+  async crear(@Body() dto: CrearTrasborodoDto) {
+    return await this.trasboardosService.crear(dto);
   }
 
   @Patch(':id/decidir')
-  async decidir(@Param('id') id: string, @Body() dto: DecidirTrasboardoDto) {
-    const datos = await this.trasboardosService.decidir(id, dto);
-    return { exito: true, datos, mensaje: 'Trasbordo procesado correctamente' };
+  async decidir(@Param('id') id: string, @Body() dto: DecidirTrasborodoDto) {
+    return await this.trasboardosService.decidir(id, dto);
   }
 
   @Delete(':id')
   async eliminar(@Param('id') id: string) {
-    const datos = await this.trasboardosService.eliminar(id);
-    return { exito: true, datos, mensaje: 'Trasbordo eliminado correctamente' };
+    return await this.trasboardosService.eliminar(id);
   }
 }

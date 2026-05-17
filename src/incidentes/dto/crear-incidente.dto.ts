@@ -1,31 +1,33 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, IsEnum } from 'class-validator';
 import { IncidentType } from '@prisma/client';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsNotEmpty, Max, Min } from 'class-validator';
 
 export class CrearIncidenteDto {
-  @IsString()
-  @IsNotEmpty()
-  driverId: string;
+  @IsNumber()
+  viajeId: number;
 
-  @IsString()
-  @IsOptional()
-  tripId?: string;
+  @IsNumber()
+  conductorId: number;
 
   @IsEnum(IncidentType)
-  type: IncidentType;
+  tipo: IncidentType;
 
   @IsString()
-  @IsOptional()
-  description?: string;
+  @IsNotEmpty()
+  descripcion: string;
 
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   @IsOptional()
-  latitude?: number;
+  latitud?: number;
 
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   @IsOptional()
-  longitude?: number;
+  longitud?: number;
 
   @IsBoolean()
   @IsOptional()
-  requestStopTracking?: boolean;
+  solicitarPausarGps?: boolean;
 }

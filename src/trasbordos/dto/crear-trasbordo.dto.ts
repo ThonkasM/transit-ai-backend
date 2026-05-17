@@ -1,25 +1,23 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export class CrearTrasboardoDto {
-  @IsString()
-  @IsNotEmpty()
-  fromTripId: string;
-
-  @IsString()
-  @IsOptional()
-  toTripId?: string;
-
-  @IsString()
-  @IsOptional()
-  stopId?: string;
+export class CrearTrasborodoDto {
+  @IsNumber()
+  viajeOrigenId: number;
 
   @IsNumber()
-  latitude: number;
+  viajeDestinoId: number;
 
   @IsNumber()
-  longitude: number;
+  @Min(-90)
+  @Max(90)
+  latitud: number;
+
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitud: number;
 
   @IsString()
   @IsOptional()
-  reason?: string;
+  razon?: string;
 }

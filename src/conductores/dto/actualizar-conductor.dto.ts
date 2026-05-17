@@ -1,8 +1,25 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CrearConductorDto } from './crear-conductor.dto';
+import { IsBoolean, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 
-/**
- * DTO para actualizar un conductor existente.
- * Todos los campos son opcionales para soportar actualizaciones parciales (PATCH).
- */
-export class ActualizarConductorDto extends PartialType(CrearConductorDto) {}
+export class ActualizarConductorDto {
+  @IsNumber()
+  @IsOptional()
+  lineaId?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(30)
+  numeroLicencia?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(5)
+  categoriaLicencia?: string;
+
+  @IsString()
+  @IsOptional()
+  vencimientoLicencia?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  activo?: boolean;
+}

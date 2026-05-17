@@ -1,29 +1,39 @@
-import { IsString, IsNumber, IsOptional, IsNotEmpty, Min, Max } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsNotEmpty, Min, Max } from 'class-validator';
 
 export class UbicacionDto {
   @IsString()
   @IsNotEmpty()
-  tripId!: string;
+  viajeId: string;
 
   @IsNumber()
   @Min(-90)
   @Max(90)
-  latitud!: number;
+  latitud: number;
 
   @IsNumber()
   @Min(-180)
   @Max(180)
-  longitud!: number;
+  longitud: number;
 
-  /** Rumbo en grados (0-360°), 0 = Norte */
   @IsNumber()
   @Min(0)
   @Max(360)
   @IsOptional()
-  heading?: number;
+  rumbo?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  speed?: number;
+  velocidad?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  precisionMetros?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  nivelBateria?: number;
 }

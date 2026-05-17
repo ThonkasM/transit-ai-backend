@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
 import { TurnosService } from './turnos.service';
 import { CrearTurnoDto } from './dto/crear-turno.dto';
 import { ActualizarTurnoDto } from './dto/actualizar-turno.dto';
@@ -8,32 +8,27 @@ export class TurnosController {
   constructor(private readonly turnosService: TurnosService) {}
 
   @Get()
-  async obtenerTodos(@Query('driverId') driverId?: string, @Query('internoId') internoId?: string) {
-    const datos = await this.turnosService.obtenerTodos(driverId, internoId);
-    return { exito: true, datos, mensaje: 'Turnos obtenidos correctamente' };
+  async obtenerTodos() {
+    return await this.turnosService.obtenerTodos();
   }
 
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
-    const datos = await this.turnosService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Turno obtenido correctamente' };
+    return await this.turnosService.obtenerPorId(id);
   }
 
   @Post()
   async crear(@Body() dto: CrearTurnoDto) {
-    const datos = await this.turnosService.crear(dto);
-    return { exito: true, datos, mensaje: 'Turno creado correctamente' };
+    return await this.turnosService.crear(dto);
   }
 
   @Patch(':id')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarTurnoDto) {
-    const datos = await this.turnosService.actualizar(id, dto);
-    return { exito: true, datos, mensaje: 'Turno actualizado correctamente' };
+    return await this.turnosService.actualizar(id, dto);
   }
 
   @Delete(':id')
   async eliminar(@Param('id') id: string) {
-    const datos = await this.turnosService.eliminar(id);
-    return { exito: true, datos, mensaje: 'Turno eliminado correctamente' };
+    return await this.turnosService.eliminar(id);
   }
 }

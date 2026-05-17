@@ -1,35 +1,41 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength, Max, Min } from 'class-validator';
 
 export class CrearFavoritoDto {
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
+  @IsNumber()
+  usuarioId: number;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(100)
   alias: string;
 
   @IsNumber()
-  fromLat: number;
+  @Min(-90)
+  @Max(90)
+  latitudOrigen: number;
 
   @IsNumber()
-  fromLng: number;
+  @Min(-180)
+  @Max(180)
+  longitudOrigen: number;
 
   @IsString()
-  @IsOptional()
-  fromLabel?: string;
+  @IsNotEmpty()
+  @MaxLength(150)
+  etiquetaOrigen: string;
 
   @IsNumber()
-  toLat: number;
+  @Min(-90)
+  @Max(90)
+  latitudDestino: number;
 
   @IsNumber()
-  toLng: number;
+  @Min(-180)
+  @Max(180)
+  longitudDestino: number;
 
   @IsString()
-  @IsOptional()
-  toLabel?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+  @IsNotEmpty()
+  @MaxLength(150)
+  etiquetaDestino: string;
 }

@@ -8,32 +8,31 @@ export class AsignacionesController {
   constructor(private readonly asignacionesService: AsignacionesService) {}
 
   @Get()
-  async obtenerTodos(@Query('fecha') fecha?: string, @Query('routeId') routeId?: string) {
-    const datos = await this.asignacionesService.obtenerTodos(fecha, routeId);
-    return { exito: true, datos, mensaje: 'Asignaciones obtenidas correctamente' };
+  async obtenerTodos(
+    @Query('sindicatoId') sindicatoId?: string,
+    @Query('fecha') fecha?: string,
+    @Query('conductorId') conductorId?: string,
+  ) {
+    return await this.asignacionesService.obtenerTodos(sindicatoId, fecha, conductorId);
   }
 
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
-    const datos = await this.asignacionesService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Asignación obtenida correctamente' };
+    return await this.asignacionesService.obtenerPorId(id);
   }
 
   @Post()
   async crear(@Body() dto: CrearAsignacionDto) {
-    const datos = await this.asignacionesService.crear(dto);
-    return { exito: true, datos, mensaje: 'Asignación creada correctamente' };
+    return await this.asignacionesService.crear(dto);
   }
 
   @Patch(':id')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarAsignacionDto) {
-    const datos = await this.asignacionesService.actualizar(id, dto);
-    return { exito: true, datos, mensaje: 'Asignación actualizada correctamente' };
+    return await this.asignacionesService.actualizar(id, dto);
   }
 
   @Delete(':id')
   async eliminar(@Param('id') id: string) {
-    const datos = await this.asignacionesService.eliminar(id);
-    return { exito: true, datos, mensaje: 'Asignación eliminada correctamente' };
+    return await this.asignacionesService.eliminar(id);
   }
 }

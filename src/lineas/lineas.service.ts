@@ -3,105 +3,79 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CrearLineaDto } from './dto/crear-linea.dto';
 import { ActualizarLineaDto } from './dto/actualizar-linea.dto';
 
-/**
- * LineasService maneja toda la lógica de negocio relacionada con las líneas de transporte.
- * Se comunica con la base de datos a través de PrismaService.
- */
 @Injectable()
 export class LineasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Obtiene todas las líneas activas (no eliminadas).
-   * Incluye información del administrador para mostrar quién gestiona cada línea.
-   * Filtra por deletedAt null para implementar soft delete.
-   */
-  async obtenerTodas() {
+  async obtenerTodas(sindicatoId?: string) {
     return this.prisma.busLine.findMany({
-      where: { deletedAt: null },
-      include: {
-        admin: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+      where: {
+        deletedAt: null,
+        active: true,
+        ...(sindicatoId ? { syndicateId: BigInt(sindicatoId) } : {}),
       },
+      include: {
+        syndicate: { select: { id: true, name: true } },
+        _count: { select: { routes: true, drivers: true, internal: true } },
+      },
+      orderBy: { name: 'asc' },
     });
   }
 
-  /**
-   * Obtiene una línea específica por su ID.
-   * Lanza NotFoundException si la línea no existe o fue eliminada,
-   * para que NestJS retorne automáticamente un 404.
-   */
   async obtenerPorId(id: string) {
     const linea = await this.prisma.busLine.findFirst({
-      where: { id, deletedAt: null },
+      where: { id: BigInt(id), deletedAt: null },
       include: {
-        admin: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        syndicate: { select: { id: true, name: true } },
+        routes: { where: { deletedAt: null, active: true }, select: { id: true, name: true, direction: true } },
+        terminals: { select: { id: true, name: true, type: true } },
+        _count: { select: { drivers: true, internal: true } },
       },
     });
 
-    if (!linea) {
-      throw new NotFoundException(`Línea con ID ${id} no encontrada`);
-    }
-
+    if (!linea) throw new NotFoundException(`Línea con ID ${id} no encontrada`);
     return linea;
   }
 
-  /**
-   * Crea una nueva línea de transporte con los datos del DTO.
-   * Prisma valida las restricciones de la base de datos (unique, etc.).
-   */
   async crear(dto: CrearLineaDto) {
     return this.prisma.busLine.create({
       data: {
+        syndicateId: BigInt(dto.sindicatoId),
         name: dto.nombre,
         code: dto.codigo,
         description: dto.descripcion,
+        fare: dto.tarifa,
         color: dto.color ?? '#00d992',
-        adminId: dto.adminId,
+        operationStartTime: dto.horaInicioOperacion ? new Date(`1970-01-01T${dto.horaInicioOperacion}`) : null,
+        operationEndTime: dto.horaFinOperacion ? new Date(`1970-01-01T${dto.horaFinOperacion}`) : null,
+        imageUrl: dto.imagenUrl,
       },
     });
   }
 
-  /**
-   * Actualiza los datos de una línea existente.
-   * Primero verifica que exista (via obtenerPorId), luego aplica los cambios.
-   */
   async actualizar(id: string, dto: ActualizarLineaDto) {
     await this.obtenerPorId(id);
-
     return this.prisma.busLine.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: {
         ...(dto.nombre !== undefined && { name: dto.nombre }),
         ...(dto.codigo !== undefined && { code: dto.codigo }),
         ...(dto.descripcion !== undefined && { description: dto.descripcion }),
+        ...(dto.tarifa !== undefined && { fare: dto.tarifa }),
         ...(dto.color !== undefined && { color: dto.color }),
-        ...(dto.adminId !== undefined && { adminId: dto.adminId }),
+        ...(dto.horaInicioOperacion !== undefined && { operationStartTime: new Date(`1970-01-01T${dto.horaInicioOperacion}`) }),
+        ...(dto.horaFinOperacion !== undefined && { operationEndTime: new Date(`1970-01-01T${dto.horaFinOperacion}`) }),
+        ...(dto.imagenUrl !== undefined && { imageUrl: dto.imagenUrl }),
+        ...(dto.activo !== undefined && { active: dto.activo }),
       },
     });
   }
 
-  /**
-   * Realiza un soft delete de la línea estableciendo deletedAt al momento actual.
-   * Esto preserva el historial en la base de datos sin eliminar el registro físicamente.
-   */
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-
     return this.prisma.busLine.update({
-      where: { id },
-      data: { deletedAt: new Date() },
+      where: { id: BigInt(id) },
+      data: { deletedAt: new Date(), active: false },
     });
   }
 }

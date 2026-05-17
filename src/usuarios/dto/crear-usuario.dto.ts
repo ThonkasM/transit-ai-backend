@@ -1,31 +1,38 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum } from 'class-validator';
-import { Role } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { IsEmail, IsEnum, IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
 
 export class CrearUsuarioDto {
+  @IsNumber()
+  @IsOptional()
+  sindicatoId?: number;
+
   @IsEmail()
   email: string;
 
   @IsString()
   @IsNotEmpty()
-  name: string;
+  @MinLength(6)
+  contrasena: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
+  nombre: string;
 
   @IsString()
   @IsOptional()
-  passwordHash?: string;
-
-  @IsString()
-  @IsOptional()
-  phone?: string;
+  @MaxLength(20)
+  telefono?: string;
 
   @IsString()
   @IsOptional()
   avatarUrl?: string;
 
-  @IsEnum(Role)
+  @IsEnum(UserRole)
   @IsOptional()
-  role?: Role;
+  rol?: UserRole;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  createdById?: string;
+  creadoPorId?: number;
 }

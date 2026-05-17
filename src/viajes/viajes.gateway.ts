@@ -10,12 +10,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ViajesService } from './viajes.service';
 import { UbicacionDto } from './dto/ubicacion.dto';
+import { FinalizarViajeDto } from './dto/finalizar-viaje.dto';
 
-/**
- * ViajesGateway maneja las comunicaciones WebSocket para viajes en tiempo real.
- * Usa el namespace 'viajes' para separar estos eventos de otros namespaces WebSocket.
- * Permite a los pasajeros suscribirse a un viaje específico y recibir actualizaciones GPS.
- */
 @WebSocketGateway({ namespace: 'viajes', cors: { origin: '*' } })
 export class ViajesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -23,82 +19,102 @@ export class ViajesGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(private readonly viajesService: ViajesService) {}
 
-  /**
-   * Se ejecuta cuando un cliente WebSocket se conecta al namespace viajes.
-   * Registra la conexión para debugging y monitoreo.
-   */
   handleConnection(client: Socket) {
-    console.log(`[ViajesGateway] Cliente conectado: ${client.id}`);
+    console.log(`[Viajes WS] Conectado: ${client.id}`);
   }
 
-  /**
-   * Se ejecuta cuando un cliente WebSocket se desconecta.
-   * Limpia los recursos asociados a la conexión.
-   */
   handleDisconnect(client: Socket) {
-    console.log(`[ViajesGateway] Cliente desconectado: ${client.id}`);
+    console.log(`[Viajes WS] Desconectado: ${client.id}`);
   }
 
-  /**
-   * Permite a un cliente unirse a la sala de un viaje específico.
-   * Cada viaje tiene su propia sala (room) para que las actualizaciones
-   * solo lleguen a los clientes interesados en ese viaje particular.
-   * Retorna confirmación de que el cliente se unió correctamente.
-   */
-  @SubscribeMessage('unirse-viaje')
-  async handleUnirseViaje(
-    @MessageBody() data: { tripId: string },
+  /** Pasajero/monitor se suscribe a un viaje para recibir actualizaciones GPS */
+  @SubscribeMessage('suscribir-viaje')
+  async handleSuscribirViaje(
+    @MessageBody() data: { viajeId: string },
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const roomName = `viaje-${data.tripId}`;
-      await client.join(roomName);
-      console.log(`[ViajesGateway] Cliente ${client.id} se unió a ${roomName}`);
-      return { exito: true, mensaje: `Conectado al viaje ${data.tripId}` };
-    } catch (error) {
-      console.error(`[ViajesGateway] Error al unirse al viaje:`, error);
-      return { exito: false, mensaje: 'No se pudo conectar al viaje' };
+      await client.join(`viaje-${data.viajeId}`);
+      return { exito: true, mensaje: `Suscrito al viaje ${data.viajeId}` };
+    } catch {
+      return { exito: false, mensaje: 'No se pudo suscribir al viaje' };
     }
   }
 
+  /** Pasajero/monitor deja de recibir actualizaciones de un viaje */
+  @SubscribeMessage('desuscribir-viaje')
+  async handleDesuscribirViaje(
+    @MessageBody() data: { viajeId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    await client.leave(`viaje-${data.viajeId}`);
+    return { exito: true, mensaje: `Desuscrito del viaje ${data.viajeId}` };
+  }
+
+  /** Suscripción a todos los buses activos de una línea (vista mapa pasajero) */
+  @SubscribeMessage('suscribir-linea')
+  async handleSuscribirLinea(
+    @MessageBody() data: { lineaId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      await client.join(`linea-${data.lineaId}`);
+      return { exito: true, mensaje: `Suscrito a la línea ${data.lineaId}` };
+    } catch {
+      return { exito: false, mensaje: 'No se pudo suscribir a la línea' };
+    }
+  }
+
+  /** El conductor envía su posición GPS: se guarda en BD y se transmite a suscriptores */
   @SubscribeMessage('ubicacion-conductor')
   async handleUbicacionConductor(@MessageBody() dto: UbicacionDto) {
     try {
       const ubicacion = await this.viajesService.registrarUbicacion(dto);
 
-      const roomName = `viaje-${dto.tripId}`;
-      this.server.to(roomName).emit('ubicacion-actualizada', {
-        tripId: dto.tripId,
+      const payload = {
+        viajeId: dto.viajeId,
         latitud: dto.latitud,
         longitud: dto.longitud,
-        heading: dto.heading,
-        speed: dto.speed,
-        timestamp: ubicacion.recordedAt,
-      });
+        rumbo: dto.rumbo,
+        velocidad: dto.velocidad,
+        registradoEn: ubicacion.recordedAt,
+      };
+
+      // Emitir a sala del viaje específico
+      this.server.to(`viaje-${dto.viajeId}`).emit('ubicacion-actualizada', payload);
 
       return { exito: true, mensaje: 'Ubicación registrada y transmitida' };
     } catch (error) {
-      console.error(`[ViajesGateway] Error al registrar ubicación:`, error);
       return { exito: false, mensaje: (error as Error).message };
     }
   }
 
+  /** Finaliza un viaje desde el conductor y notifica a todos los suscriptores */
   @SubscribeMessage('finalizar-viaje')
-  async handleFinalizarViaje(@MessageBody() data: { tripId: string }) {
+  async handleFinalizarViaje(
+    @MessageBody() data: { viajeId: string; razonFin?: string; velocidadPromedio?: number },
+  ) {
     try {
-      const viaje = await this.viajesService.finalizar(data.tripId);
+      const viaje = await this.viajesService.finalizar(data.viajeId, {
+        razonFin: data.razonFin as any,
+        velocidadPromedio: data.velocidadPromedio,
+      });
 
-      const roomName = `viaje-${data.tripId}`;
-      this.server.to(roomName).emit('viaje-finalizado', {
-        tripId: data.tripId,
-        status: viaje.status,
-        endedAt: viaje.endedAt,
+      this.server.to(`viaje-${data.viajeId}`).emit('viaje-finalizado', {
+        viajeId: data.viajeId,
+        estado: viaje.status,
+        razonFin: viaje.endReason,
+        finalizadoEn: viaje.finishedAt,
       });
 
       return { exito: true, mensaje: 'Viaje finalizado correctamente' };
     } catch (error) {
-      console.error(`[ViajesGateway] Error al finalizar viaje:`, error);
       return { exito: false, mensaje: (error as Error).message };
     }
+  }
+
+  /** Emite actualización de ubicación a suscriptores de una línea (llamado desde service) */
+  emitirUbicacionALinea(lineaId: string, payload: any) {
+    this.server.to(`linea-${lineaId}`).emit('bus-actualizado', payload);
   }
 }

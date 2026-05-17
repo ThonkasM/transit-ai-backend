@@ -1,8 +1,36 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CrearRutaDto } from './crear-ruta.dto';
+import { RouteDirection } from '@prisma/client';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
-/**
- * DTO para actualizar una ruta existente.
- * Todos los campos son opcionales para soportar actualizaciones parciales (PATCH).
- */
-export class ActualizarRutaDto extends PartialType(CrearRutaDto) {}
+export class ActualizarRutaDto {
+  @IsString()
+  @IsOptional()
+  @MaxLength(150)
+  nombre?: string;
+
+  @IsEnum(RouteDirection)
+  @IsOptional()
+  direccion?: RouteDirection;
+
+  @IsString()
+  @IsOptional()
+  archivoImportadoUrl?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  distanciaKm?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tiempoEstimadoMin?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tiempoDescansoMin?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  activo?: boolean;
+}

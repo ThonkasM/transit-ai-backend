@@ -1,29 +1,30 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber, IsEnum } from 'class-validator';
 import { TerminalType } from '@prisma/client';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsNotEmpty, MaxLength, Max, Min } from 'class-validator';
 
 export class CrearTerminalDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  @MaxLength(150)
+  nombre: string;
 
   @IsEnum(TerminalType)
-  type: TerminalType;
+  tipo: TerminalType;
 
   @IsNumber()
-  latitude: number;
+  @Min(-90)
+  @Max(90)
+  latitud: number;
 
   @IsNumber()
-  longitude: number;
+  @Min(-180)
+  @Max(180)
+  longitud: number;
 
   @IsString()
   @IsOptional()
-  address?: string;
+  direccion?: string;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  busLineId?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+  lineaId?: number;
 }
