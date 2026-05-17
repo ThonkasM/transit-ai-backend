@@ -22,7 +22,8 @@ export class TerminalesService {
       where: { id, deletedAt: null },
       include: { busLine: { select: { id: true, name: true, code: true } } },
     });
-    if (!terminal) throw new NotFoundException(`Terminal con ID ${id} no encontrada`);
+    if (!terminal)
+      throw new NotFoundException(`Terminal con ID ${id} no encontrada`);
     return terminal;
   }
 
@@ -37,6 +38,9 @@ export class TerminalesService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.terminal.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.terminal.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

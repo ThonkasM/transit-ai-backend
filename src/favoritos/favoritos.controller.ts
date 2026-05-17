@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+} from '@nestjs/common';
 import { FavoritosService } from './favoritos.service';
 import { CrearFavoritoDto } from './dto/crear-favorito.dto';
 import { ActualizarFavoritoDto } from './dto/actualizar-favorito.dto';
@@ -26,9 +34,16 @@ export class FavoritosController {
   }
 
   @Patch(':id')
-  async actualizar(@Param('id') id: string, @Body() dto: ActualizarFavoritoDto) {
+  async actualizar(
+    @Param('id') id: string,
+    @Body() dto: ActualizarFavoritoDto,
+  ) {
     const datos = await this.favoritosService.actualizar(id, dto);
-    return { exito: true, datos, mensaje: 'Favorito actualizado correctamente' };
+    return {
+      exito: true,
+      datos,
+      mensaje: 'Favorito actualizado correctamente',
+    };
   }
 
   @Delete(':id')

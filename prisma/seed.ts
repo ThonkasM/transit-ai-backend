@@ -1,10 +1,10 @@
 // @ts-nocheck — tipos se regeneran tras `prisma migrate dev`
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
 import 'dotenv/config';
 
-const url = process.env.DATABASE_URL ?? 'file:./dev.db';
-const adapter = new PrismaBetterSqlite3({ url });
+const url = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/transit_ai_db';
+const adapter = new PrismaPg(url);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
@@ -17,7 +17,7 @@ async function main() {
     create: {
       email: 'superadmin@transit.bo',
       name: 'Super Admin',
-      passwordHash: '$2b$10$placeholderHashSuperAdmin',
+      passwordHash: '$2b$10$Vv2k4nsrgiUsERAWeovVRODeW.fpQ1lgoDUYQxqpNc/E2iTEEQmzG', // admin123
       role: 'SUPERADMIN',
       isActive: true,
     },
@@ -29,7 +29,7 @@ async function main() {
     create: {
       email: 'admin.linea8@transit.bo',
       name: 'Carlos Mamani',
-      passwordHash: '$2b$10$placeholderHashAdmin1',
+      passwordHash: '$2b$10$Vv2k4nsrgiUsERAWeovVRODeW.fpQ1lgoDUYQxqpNc/E2iTEEQmzG', // admin123
       role: 'ADMIN',
       phone: '77123456',
       isActive: true,
@@ -43,7 +43,7 @@ async function main() {
     create: {
       email: 'admin.linea25@transit.bo',
       name: 'Rosa Torrico',
-      passwordHash: '$2b$10$placeholderHashAdmin2',
+      passwordHash: '$2b$10$Vv2k4nsrgiUsERAWeovVRODeW.fpQ1lgoDUYQxqpNc/E2iTEEQmzG', // admin123
       role: 'ADMIN',
       phone: '76543210',
       isActive: true,
@@ -57,7 +57,7 @@ async function main() {
     create: {
       email: 'chofer1@transit.bo',
       name: 'Pedro Flores',
-      passwordHash: '$2b$10$placeholderHashDriver1',
+      passwordHash: '$2b$10$biyJIJekR2ojMqfzL5K2IuRktDLZTScdtQOxax0c1bAz5sbKUT3pW', // chofer123
       role: 'DRIVER',
       phone: '71234567',
       isActive: true,
@@ -70,7 +70,7 @@ async function main() {
     create: {
       email: 'chofer2@transit.bo',
       name: 'Juan Quispe',
-      passwordHash: '$2b$10$placeholderHashDriver2',
+      passwordHash: '$2b$10$biyJIJekR2ojMqfzL5K2IuRktDLZTScdtQOxax0c1bAz5sbKUT3pW', // chofer123
       role: 'DRIVER',
       phone: '72345678',
       isActive: true,
@@ -83,7 +83,7 @@ async function main() {
     create: {
       email: 'chofer3@transit.bo',
       name: 'Mario Vaca',
-      passwordHash: '$2b$10$placeholderHashDriver3',
+      passwordHash: '$2b$10$biyJIJekR2ojMqfzL5K2IuRktDLZTScdtQOxax0c1bAz5sbKUT3pW', // chofer123
       role: 'DRIVER',
       phone: '73456789',
       isActive: true,
@@ -96,6 +96,7 @@ async function main() {
     create: {
       email: 'ciudadano1@gmail.com',
       name: 'Ana Gutiérrez',
+      passwordHash: '$2b$10$TfEVFP1buSzq.KSUzjno0OlbuP1m4NMzdBgWPBb7LWmhO/aA8u.CK', // pasajero123
       role: 'CITIZEN',
       phone: '70000001',
       isActive: true,
@@ -108,6 +109,7 @@ async function main() {
     create: {
       email: 'ciudadano2@gmail.com',
       name: 'Luis Pedraza',
+      passwordHash: '$2b$10$TfEVFP1buSzq.KSUzjno0OlbuP1m4NMzdBgWPBb7LWmhO/aA8u.CK', // pasajero123
       role: 'CITIZEN',
       phone: '70000002',
       isActive: true,
@@ -483,6 +485,48 @@ async function main() {
   });
 
   console.log('✅ Asignaciones diarias creadas');
+
+  // ── TARIFAS ──────────────────────────────────────────────────
+  await prisma.fare.upsert({
+    where: { id: 'fare-8-adult' },
+    update: {},
+    create: {
+      id: 'fare-8-adult',
+      routeId: ruta8ida.id,
+      amount: 2.50,
+      currency: 'BOB',
+      passengerType: 'ADULT',
+      isActive: true,
+    },
+  });
+
+  await prisma.fare.upsert({
+    where: { id: 'fare-8-student' },
+    update: {},
+    create: {
+      id: 'fare-8-student',
+      routeId: ruta8ida.id,
+      amount: 1.50,
+      currency: 'BOB',
+      passengerType: 'STUDENT',
+      isActive: true,
+    },
+  });
+
+  await prisma.fare.upsert({
+    where: { id: 'fare-25-adult' },
+    update: {},
+    create: {
+      id: 'fare-25-adult',
+      routeId: ruta25.id,
+      amount: 2.00,
+      currency: 'BOB',
+      passengerType: 'ADULT',
+      isActive: true,
+    },
+  });
+
+  console.log('✅ Tarifas creadas');
 
   // ── PREFERENCIAS DE USUARIOS ────────────────────────────────
   await prisma.userPreference.upsert({

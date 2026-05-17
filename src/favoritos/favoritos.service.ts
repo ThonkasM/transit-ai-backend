@@ -15,8 +15,11 @@ export class FavoritosService {
   }
 
   async obtenerPorId(id: string) {
-    const favorito = await this.prisma.savedJourney.findFirst({ where: { id } });
-    if (!favorito) throw new NotFoundException(`Favorito con ID ${id} no encontrado`);
+    const favorito = await this.prisma.savedJourney.findFirst({
+      where: { id },
+    });
+    if (!favorito)
+      throw new NotFoundException(`Favorito con ID ${id} no encontrado`);
     return favorito;
   }
 

@@ -32,7 +32,8 @@ export class AsignacionesService {
         trips: { select: { id: true, status: true, startedAt: true } },
       },
     });
-    if (!asignacion) throw new NotFoundException(`Asignación con ID ${id} no encontrada`);
+    if (!asignacion)
+      throw new NotFoundException(`Asignación con ID ${id} no encontrada`);
     return asignacion;
   }
 

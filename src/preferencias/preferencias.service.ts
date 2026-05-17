@@ -11,7 +11,10 @@ export class PreferenciasService {
       where: { userId },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
-    if (!preferencia) throw new NotFoundException(`Preferencias del usuario ${userId} no encontradas`);
+    if (!preferencia)
+      throw new NotFoundException(
+        `Preferencias del usuario ${userId} no encontradas`,
+      );
     return preferencia;
   }
 

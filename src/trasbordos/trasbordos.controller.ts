@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { TrasboardosService } from './trasbordos.service';
 import { CrearTrasboardoDto } from './dto/crear-trasbordo.dto';
 import { DecidirTrasboardoDto } from './dto/decidir-trasbordo.dto';
@@ -10,7 +19,11 @@ export class TrasboardosController {
   @Get()
   async obtenerTodos(@Query('status') status?: string) {
     const datos = await this.trasboardosService.obtenerTodos(status);
-    return { exito: true, datos, mensaje: 'Trasbordos obtenidos correctamente' };
+    return {
+      exito: true,
+      datos,
+      mensaje: 'Trasbordos obtenidos correctamente',
+    };
   }
 
   @Get(':id')

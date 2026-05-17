@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { IncidentesService } from './incidentes.service';
 import { CrearIncidenteDto } from './dto/crear-incidente.dto';
 import { RevisarIncidenteDto } from './dto/revisar-incidente.dto';
@@ -8,9 +17,16 @@ export class IncidentesController {
   constructor(private readonly incidentesService: IncidentesService) {}
 
   @Get()
-  async obtenerTodos(@Query('driverId') driverId?: string, @Query('status') status?: string) {
+  async obtenerTodos(
+    @Query('driverId') driverId?: string,
+    @Query('status') status?: string,
+  ) {
     const datos = await this.incidentesService.obtenerTodos(driverId, status);
-    return { exito: true, datos, mensaje: 'Incidentes obtenidos correctamente' };
+    return {
+      exito: true,
+      datos,
+      mensaje: 'Incidentes obtenidos correctamente',
+    };
   }
 
   @Get(':id')

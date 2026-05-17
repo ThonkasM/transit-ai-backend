@@ -113,4 +113,45 @@ export class ConductoresService {
       data: { credentialStatus: status },
     });
   }
+
+  async obtenerRutaAsignada(userId: string) {
+    const driver = await this.prisma.driver.findFirst({
+      where: { userId, deletedAt: null },
+    });
+
+    if (!driver) {
+      throw new NotFoundException(
+        'No se encontró un conductor asociado a este usuario',
+      );
+    }
+
+    const shifts = await this.prisma.shift.findMany({
+      where: { driverId: driver.id, deletedAt: null, isActive: true },
+      include: {
+        route: {
+          include: {
+            routeStops: {
+              orderBy: { orderIndex: 'asc' },
+              include: {
+                stop: {
+                  select: { id: true, name: true, latitude: true, longitude: true },
+                },
+              },
+            },
+            busLine: {
+              select: { id: true, name: true, code: true, color: true },
+            },
+          },
+        },
+        interno: {
+          select: { id: true, plateNumber: true, number: true },
+        },
+      },
+    });
+
+    return {
+      driverId: driver.id,
+      shifts,
+    };
+  }
 }

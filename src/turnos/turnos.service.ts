@@ -15,7 +15,9 @@ export class TurnosService {
         ...(internoId ? { internoId } : {}),
       },
       include: {
-        driver: { include: { user: { select: { id: true, name: true, email: true } } } },
+        driver: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
         interno: { select: { id: true, number: true, plateNumber: true } },
         route: { select: { id: true, name: true } },
       },
@@ -26,7 +28,9 @@ export class TurnosService {
     const turno = await this.prisma.shift.findFirst({
       where: { id, deletedAt: null },
       include: {
-        driver: { include: { user: { select: { id: true, name: true, email: true } } } },
+        driver: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
         interno: { select: { id: true, number: true, plateNumber: true } },
         route: { select: { id: true, name: true } },
       },
@@ -56,6 +60,9 @@ export class TurnosService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.shift.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.shift.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

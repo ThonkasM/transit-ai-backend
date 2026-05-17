@@ -1,13 +1,13 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    const url = process.env.DATABASE_URL ?? 'file:./dev.db';
-    const adapter = new PrismaBetterSqlite3({ url });
-    super({ adapter } as any);
+    const url = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/transit_ai';
+    const adapter = new PrismaPg(url);
+    super({ adapter });
   }
 
   async onModuleInit() {

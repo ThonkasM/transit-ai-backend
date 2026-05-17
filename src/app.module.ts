@@ -17,6 +17,8 @@ import { TrasboardosModule } from './trasbordos/trasbordos.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
 import { FavoritosModule } from './favoritos/favoritos.module';
+import { AuthModule } from './auth/auth.module';
+import { TarifasModule } from './tarifas/tarifas.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { FavoritosModule } from './favoritos/favoritos.module';
     NotificacionesModule,
     PreferenciasModule,
     FavoritosModule,
+    AuthModule,
+    TarifasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsEnum,
+} from 'class-validator';
 import { TerminalType } from '@prisma/client';
 
 export class CrearTerminalDto {

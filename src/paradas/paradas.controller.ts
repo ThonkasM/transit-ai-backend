@@ -43,10 +43,7 @@ export class ParadasController {
 
   /** Actualiza parcialmente los datos de una parada */
   @Patch(':id')
-  async actualizar(
-    @Param('id') id: string,
-    @Body() dto: ActualizarParadaDto,
-  ) {
+  async actualizar(@Param('id') id: string, @Body() dto: ActualizarParadaDto) {
     const datos = await this.paradasService.actualizar(id, dto);
     return { exito: true, datos, mensaje: 'Parada actualizada correctamente' };
   }

@@ -25,7 +25,11 @@ export class ParadasService {
       where: { deletedAt: null },
       include: {
         routeStops: {
-          select: { orderIndex: true, routeId: true, route: { select: { id: true, name: true } } },
+          select: {
+            orderIndex: true,
+            routeId: true,
+            route: { select: { id: true, name: true } },
+          },
         },
       },
     });
@@ -36,12 +40,15 @@ export class ParadasService {
       where: { id, deletedAt: null },
       include: {
         routeStops: {
-          include: { route: { select: { id: true, name: true, busLineId: true } } },
+          include: {
+            route: { select: { id: true, name: true, busLineId: true } },
+          },
         },
       },
     });
 
-    if (!parada) throw new NotFoundException(`Parada con ID ${id} no encontrada`);
+    if (!parada)
+      throw new NotFoundException(`Parada con ID ${id} no encontrada`);
     return parada;
   }
 
@@ -83,6 +90,9 @@ export class ParadasService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.stop.update({ where: { id }, data: { deletedAt: new Date() } });
+    return this.prisma.stop.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

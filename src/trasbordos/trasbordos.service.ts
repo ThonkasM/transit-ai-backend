@@ -24,13 +24,26 @@ export class TrasboardosService {
     const trasbordo = await this.prisma.internoTransfer.findFirst({
       where: { id },
       include: {
-        fromTrip: { include: { interno: true, route: { select: { id: true, name: true } } } },
-        toTrip: { include: { interno: true, route: { select: { id: true, name: true } } } },
-        stop: { select: { id: true, name: true, latitude: true, longitude: true } },
+        fromTrip: {
+          include: {
+            interno: true,
+            route: { select: { id: true, name: true } },
+          },
+        },
+        toTrip: {
+          include: {
+            interno: true,
+            route: { select: { id: true, name: true } },
+          },
+        },
+        stop: {
+          select: { id: true, name: true, latitude: true, longitude: true },
+        },
         decidedBy: { select: { id: true, name: true } },
       },
     });
-    if (!trasbordo) throw new NotFoundException(`Trasbordo con ID ${id} no encontrado`);
+    if (!trasbordo)
+      throw new NotFoundException(`Trasbordo con ID ${id} no encontrado`);
     return trasbordo;
   }
 

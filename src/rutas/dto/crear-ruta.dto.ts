@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsArray, IsNotEmpty, IsNumber, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class WaypointDto {

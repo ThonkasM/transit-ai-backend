@@ -6,49 +6,50 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { LineasService } from './lineas.service';
 import { CrearLineaDto } from './dto/crear-linea.dto';
 import { ActualizarLineaDto } from './dto/actualizar-linea.dto';
 
-/**
- * LineasController expone los endpoints REST para gestionar líneas de transporte.
- * Todas las rutas están en español bajo el prefijo /lineas.
- */
 @Controller('lineas')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LineasController {
   constructor(private readonly lineasService: LineasService) {}
 
-  /** Retorna todas las líneas activas del sistema */
   @Get()
+  @Roles('ADMIN', 'DRIVER', 'CITIZEN')
   async obtenerTodas() {
     const datos = await this.lineasService.obtenerTodas();
     return { exito: true, datos, mensaje: 'Líneas obtenidas correctamente' };
   }
 
-  /** Retorna una línea específica por su ID */
   @Get(':id')
+  @Roles('ADMIN', 'DRIVER', 'CITIZEN')
   async obtenerPorId(@Param('id') id: string) {
     const datos = await this.lineasService.obtenerPorId(id);
     return { exito: true, datos, mensaje: 'Línea obtenida correctamente' };
   }
 
-  /** Crea una nueva línea de transporte */
   @Post()
+  @Roles('ADMIN')
   async crear(@Body() dto: CrearLineaDto) {
     const datos = await this.lineasService.crear(dto);
     return { exito: true, datos, mensaje: 'Línea creada correctamente' };
   }
 
-  /** Actualiza parcialmente los datos de una línea existente */
   @Patch(':id')
+  @Roles('ADMIN')
   async actualizar(@Param('id') id: string, @Body() dto: ActualizarLineaDto) {
     const datos = await this.lineasService.actualizar(id, dto);
     return { exito: true, datos, mensaje: 'Línea actualizada correctamente' };
   }
 
-  /** Elimina (soft delete) una línea del sistema */
   @Delete(':id')
+  @Roles('ADMIN')
   async eliminar(@Param('id') id: string) {
     const datos = await this.lineasService.eliminar(id);
     return { exito: true, datos, mensaje: 'Línea eliminada correctamente' };

@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ------------------------------------------------------------
@@ -122,6 +122,7 @@ model User {
   name         String
   phone        String?
   avatarUrl    String?
+  birthDate    DateTime?
   role         Role      @default(CITIZEN)
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -302,6 +303,7 @@ model Driver {
 
   credentialStatus CredentialStatus @default(PENDING)
   lastLoginAt      DateTime?
+  isTracking       Boolean          @default(false)
 
   shifts           Shift[]
   trips            Trip[]
@@ -397,9 +399,32 @@ model Route {
   trips             Trip[]
   shifts            Shift[]
   dailyAssignments  DailyAssignment[]
+  fares             Fare[]
 
   @@index([deletedAt])
   @@map("routes")
+}
+
+// ------------------------------------------------------------
+// TARIFAS
+// ------------------------------------------------------------
+
+model Fare {
+  id            String   @id @default(uuid())
+  routeId       String
+  route         Route    @relation(fields: [routeId], references: [id])
+  amount        Float
+  currency      String   @default("BOB")
+  passengerType String   @default("ADULT")
+  startDate     DateTime?
+  endDate       DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([routeId])
+  @@index([isActive])
+  @@map("fares")
 }
 
 // ------------------------------------------------------------

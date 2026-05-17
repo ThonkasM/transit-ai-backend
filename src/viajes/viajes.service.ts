@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { IniciarViajeDto } from './dto/iniciar-viaje.dto';
 import { UbicacionDto } from './dto/ubicacion.dto';
@@ -96,7 +100,9 @@ export class ViajesService {
     const viaje = await this.obtenerPorId(id);
 
     if (viaje.status !== 'ACTIVE') {
-      throw new BadRequestException(`El viaje ya está en estado ${viaje.status}`);
+      throw new BadRequestException(
+        `El viaje ya está en estado ${viaje.status}`,
+      );
     }
 
     return this.prisma.trip.update({
@@ -109,7 +115,9 @@ export class ViajesService {
     const viaje = await this.obtenerPorId(id);
 
     if (viaje.status !== 'ACTIVE') {
-      throw new BadRequestException(`El viaje ya está en estado ${viaje.status}`);
+      throw new BadRequestException(
+        `El viaje ya está en estado ${viaje.status}`,
+      );
     }
 
     return this.prisma.trip.update({
@@ -129,7 +137,9 @@ export class ViajesService {
     }
 
     if (viaje.status !== 'ACTIVE') {
-      throw new BadRequestException('Solo se pueden registrar ubicaciones en viajes activos');
+      throw new BadRequestException(
+        'Solo se pueden registrar ubicaciones en viajes activos',
+      );
     }
 
     return this.prisma.driverLocation.create({
@@ -140,6 +150,24 @@ export class ViajesService {
         heading: dto.heading,
         speed: dto.speed,
       },
+    });
+  }
+
+  async toggleTracking(userId: string, active: boolean) {
+    const driver = await this.prisma.driver.findFirst({
+      where: { userId, deletedAt: null },
+    });
+
+    if (!driver) {
+      throw new NotFoundException(
+        'No se encontró un conductor asociado a este usuario',
+      );
+    }
+
+    return this.prisma.driver.update({
+      where: { id: driver.id },
+      data: { isTracking: active },
+      select: { id: true, isTracking: true },
     });
   }
 }

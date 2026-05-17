@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+} from '@nestjs/common';
 import { NotificacionesService } from './notificaciones.service';
 import { CrearNotificacionDto } from './dto/crear-notificacion.dto';
 
@@ -7,15 +16,29 @@ export class NotificacionesController {
   constructor(private readonly notificacionesService: NotificacionesService) {}
 
   @Get()
-  async obtenerTodos(@Query('targetUserId') targetUserId?: string, @Query('type') type?: string) {
-    const datos = await this.notificacionesService.obtenerTodos(targetUserId, type);
-    return { exito: true, datos, mensaje: 'Notificaciones obtenidas correctamente' };
+  async obtenerTodos(
+    @Query('targetUserId') targetUserId?: string,
+    @Query('type') type?: string,
+  ) {
+    const datos = await this.notificacionesService.obtenerTodos(
+      targetUserId,
+      type,
+    );
+    return {
+      exito: true,
+      datos,
+      mensaje: 'Notificaciones obtenidas correctamente',
+    };
   }
 
   @Get(':id')
   async obtenerPorId(@Param('id') id: string) {
     const datos = await this.notificacionesService.obtenerPorId(id);
-    return { exito: true, datos, mensaje: 'Notificación obtenida correctamente' };
+    return {
+      exito: true,
+      datos,
+      mensaje: 'Notificación obtenida correctamente',
+    };
   }
 
   @Post()
@@ -33,6 +56,10 @@ export class NotificacionesController {
   @Delete(':id')
   async eliminar(@Param('id') id: string) {
     const datos = await this.notificacionesService.eliminar(id);
-    return { exito: true, datos, mensaje: 'Notificación eliminada correctamente' };
+    return {
+      exito: true,
+      datos,
+      mensaje: 'Notificación eliminada correctamente',
+    };
   }
 }

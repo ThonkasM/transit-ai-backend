@@ -15,7 +15,9 @@ export class NotificacionesService {
       include: {
         createdBy: { select: { id: true, name: true } },
         targetUser: { select: { id: true, name: true } },
-        receipts: { select: { id: true, userId: true, readAt: true, pushSent: true } },
+        receipts: {
+          select: { id: true, userId: true, readAt: true, pushSent: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -30,7 +32,8 @@ export class NotificacionesService {
         receipts: { include: { user: { select: { id: true, name: true } } } },
       },
     });
-    if (!notificacion) throw new NotFoundException(`Notificación con ID ${id} no encontrada`);
+    if (!notificacion)
+      throw new NotFoundException(`Notificación con ID ${id} no encontrada`);
     return notificacion;
   }
 

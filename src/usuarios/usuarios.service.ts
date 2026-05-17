@@ -13,11 +13,12 @@ import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 export class UsuariosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Obtiene todos los usuarios activos del sistema.
-   * Si se proporciona un role, filtra solo usuarios con ese rol específico.
-   * Útil para que los administradores vean solo conductores o solo pasajeros.
-   */
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+    });
+  }
+
   async crear(dto: CrearUsuarioDto) {
     return this.prisma.user.create({
       data: {
@@ -29,7 +30,13 @@ export class UsuariosService {
         role: dto.role ?? 'CITIZEN',
         createdById: dto.createdById,
       },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -99,7 +106,7 @@ export class UsuariosService {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.phone !== undefined && { phone: dto.phone }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
-        ...(dto.role !== undefined && { role: dto.role as $Enums.Role }),
+        ...(dto.role !== undefined && { role: dto.role }),
       },
       select: {
         id: true,

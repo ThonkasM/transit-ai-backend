@@ -26,12 +26,15 @@ export class IncidentesService {
     const incidente = await this.prisma.incident.findFirst({
       where: { id },
       include: {
-        driver: { include: { user: { select: { id: true, name: true, email: true } } } },
+        driver: {
+          include: { user: { select: { id: true, name: true, email: true } } },
+        },
         trip: { select: { id: true, status: true, startedAt: true } },
         reviewedBy: { select: { id: true, name: true } },
       },
     });
-    if (!incidente) throw new NotFoundException(`Incidente con ID ${id} no encontrado`);
+    if (!incidente)
+      throw new NotFoundException(`Incidente con ID ${id} no encontrado`);
     return incidente;
   }
 
