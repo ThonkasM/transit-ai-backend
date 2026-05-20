@@ -9,7 +9,7 @@ export class SindicatosService {
 
   async obtenerTodos() {
     return this.prisma.syndicate.findMany({
-      where: { active: true },
+      where: {},
       include: {
         _count: { select: { drivers: true, buses: true, lines: true } },
       },

@@ -39,6 +39,12 @@ enum CredentialStatus {
   RENEWING // En proceso de renovación
 }
 
+enum Turno {
+  MANANA
+  TARDE
+  NOCTURNO
+}
+
 /// Estado operativo del bus
 enum BusOperationalStatus {
   ACTIVE // En operación
@@ -401,7 +407,7 @@ model Internal {
 /// Define días y horas en que opera un grupo de buses.
 model Shift {
   id             BigInt    @id @default(autoincrement())
-  name           String?   @db.VarChar(50) // Ej: "Mañana", "Tarde", "Nocturno"
+  name           Turno // Ej: "Mañana", "Tarde", "Nocturno"
   daysOfWeek     String    @db.VarChar(20) // Ej: "1,2,3,4,5" (lun-vie)
   startTime      DateTime  @db.Time
   endTime        DateTime  @db.Time

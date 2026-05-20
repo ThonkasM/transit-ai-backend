@@ -1,14 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { SindicatosService } from './sindicatos.service';
 import { CrearSindicatoDto } from './dto/crear-sindicato.dto';
 import { ActualizarSindicatoDto } from './dto/actualizar-sindicato.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('sindicatos')
 export class SindicatosController {
   constructor(private readonly sindicatosService: SindicatosService) {}
 
   @Get()
-  async obtenerTodos() {
+  async obtenerTodos(@CurrentUser() usuario: any) {
+    // Si tiene sindicato propio, solo retorna ese sindicato
+    if (usuario.syndicateId) {
+      return await this.sindicatosService.obtenerPorId(usuario.syndicateId).then((s) => [s]);
+    }
     return await this.sindicatosService.obtenerTodos();
   }
 

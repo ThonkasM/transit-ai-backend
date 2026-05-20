@@ -12,7 +12,6 @@ export class ConductoresService {
     return this.prisma.driver.findMany({
       where: {
         deletedAt: null,
-        active: true,
         ...(sindicatoId ? { syndicateId: BigInt(sindicatoId) } : {}),
         ...(lineaId ? { lineId: BigInt(lineaId) } : {}),
       },
@@ -83,7 +82,7 @@ export class ConductoresService {
     await this.obtenerPorId(id);
     return this.prisma.driver.update({
       where: { id: BigInt(id) },
-      data: { deletedAt: new Date(), active: false },
+      data: { active: false },
     });
   }
 }

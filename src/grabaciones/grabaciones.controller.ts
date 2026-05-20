@@ -1,15 +1,23 @@
-import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { GrabacionesService } from './grabaciones.service';
 import { CrearGrabacionDto } from './dto/crear-grabacion.dto';
 import { RevisarGrabacionDto } from './dto/revisar-grabacion.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('grabaciones')
 export class GrabacionesController {
   constructor(private readonly grabacionesService: GrabacionesService) {}
 
   @Get()
-  async obtenerTodas(@Query('lineaId') lineaId?: string, @Query('estado') estado?: string) {
-    return await this.grabacionesService.obtenerTodas(lineaId, estado);
+  async obtenerTodas(
+    @CurrentUser() usuario: any,
+    @Query('lineaId') lineaId?: string,
+    @Query('estado') estado?: string,
+  ) {
+    const sindicatoId = usuario.syndicateId ?? undefined;
+    return await this.grabacionesService.obtenerTodas(lineaId, estado, sindicatoId);
   }
 
   @Get(':id')

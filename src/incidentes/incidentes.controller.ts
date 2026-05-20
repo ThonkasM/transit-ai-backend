@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { IncidentesService } from './incidentes.service';
 import { IncidentesGateway } from './incidentes.gateway';
 import { CrearIncidenteDto } from './dto/crear-incidente.dto';
 import { RevisarIncidenteDto } from './dto/revisar-incidente.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('incidentes')
 export class IncidentesController {
   constructor(
@@ -13,11 +16,13 @@ export class IncidentesController {
 
   @Get()
   async obtenerTodos(
+    @CurrentUser() usuario: any,
     @Query('conductorId') conductorId?: string,
     @Query('estado') estado?: string,
     @Query('viajeId') viajeId?: string,
   ) {
-    return await this.incidentesService.obtenerTodos(conductorId, estado, viajeId);
+    const sindicatoId = usuario.syndicateId ?? undefined;
+    return await this.incidentesService.obtenerTodos(conductorId, estado, viajeId, sindicatoId);
   }
 
   @Get(':id')
@@ -28,7 +33,6 @@ export class IncidentesController {
   @Post()
   async crear(@Body() dto: CrearIncidenteDto) {
     const datos = await this.incidentesService.crear(dto);
-    // Notificar vía WebSocket a todos los admins conectados
     this.incidentesGateway.emitirNuevoIncidente({
       id: datos.id?.toString(),
       tipo: datos.type,

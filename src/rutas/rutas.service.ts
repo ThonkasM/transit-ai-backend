@@ -7,12 +7,12 @@ import { ActualizarRutaDto } from './dto/actualizar-ruta.dto';
 export class RutasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerTodas(lineaId?: string) {
+  async obtenerTodas(lineaId?: string, sindicatoId?: string) {
     return this.prisma.route.findMany({
       where: {
         deletedAt: null,
-        active: true,
         ...(lineaId ? { lineId: BigInt(lineaId) } : {}),
+        ...(sindicatoId ? { line: { syndicateId: BigInt(sindicatoId) } } : {}),
       },
       include: {
         line: { select: { id: true, name: true, code: true, color: true } },
@@ -59,6 +59,9 @@ export class RutasService {
         ...(dto.distanciaKm !== undefined && { totalDistanceKm: dto.distanciaKm }),
         ...(dto.tiempoEstimadoMin !== undefined && { estimatedTimeMin: dto.tiempoEstimadoMin }),
         ...(dto.tiempoDescansoMin !== undefined && { restTimeMin: dto.tiempoDescansoMin }),
+        ...(dto.rutaGrabadaId !== undefined && {
+          routeRecordingId: dto.rutaGrabadaId ? BigInt(dto.rutaGrabadaId) : null,
+        }),
         ...(dto.activo !== undefined && { active: dto.activo }),
       },
     });
@@ -68,7 +71,7 @@ export class RutasService {
     await this.obtenerPorId(id);
     return this.prisma.route.update({
       where: { id: BigInt(id) },
-      data: { deletedAt: new Date(), active: false },
+      data: { active: false },
     });
   }
 }

@@ -11,7 +11,6 @@ export class LineasService {
     return this.prisma.busLine.findMany({
       where: {
         deletedAt: null,
-        active: true,
         ...(sindicatoId ? { syndicateId: BigInt(sindicatoId) } : {}),
       },
       include: {
@@ -66,6 +65,7 @@ export class LineasService {
         ...(dto.horaInicioOperacion !== undefined && { operationStartTime: new Date(`1970-01-01T${dto.horaInicioOperacion}`) }),
         ...(dto.horaFinOperacion !== undefined && { operationEndTime: new Date(`1970-01-01T${dto.horaFinOperacion}`) }),
         ...(dto.imagenUrl !== undefined && { imageUrl: dto.imagenUrl }),
+        ...(dto.sindicatoId !== undefined && { syndicateId: BigInt(dto.sindicatoId) }),
         ...(dto.activo !== undefined && { active: dto.activo }),
       },
     });
@@ -75,7 +75,7 @@ export class LineasService {
     await this.obtenerPorId(id);
     return this.prisma.busLine.update({
       where: { id: BigInt(id) },
-      data: { deletedAt: new Date(), active: false },
+      data: { active: false },
     });
   }
 }

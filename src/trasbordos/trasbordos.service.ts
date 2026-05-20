@@ -7,9 +7,12 @@ import { DecidirTrasborodoDto } from './dto/decidir-trasbordo.dto';
 export class TrasboardosService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerTodos(estado?: string) {
+  async obtenerTodos(estado?: string, sindicatoId?: string) {
     return this.prisma.internalTransfer.findMany({
-      where: { ...(estado ? { status: estado as any } : {}) },
+      where: {
+        ...(estado ? { status: estado as any } : {}),
+        ...(sindicatoId ? { originTrip: { assignment: { syndicateId: BigInt(sindicatoId) } } } : {}),
+      },
       include: {
         originTrip: { select: { id: true, status: true } },
         destinationTrip: { select: { id: true, status: true } },
@@ -59,6 +62,6 @@ export class TrasboardosService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.internalTransfer.delete({ where: { id: BigInt(id) } });
+    return this.prisma.internalTransfer.update({ where: { id: BigInt(id) }, data: { status: 'REJECTED' } });
   }
 }

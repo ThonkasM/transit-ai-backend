@@ -17,7 +17,6 @@ export class UsuariosService {
     return this.prisma.user.findMany({
       where: {
         deletedAt: null,
-        active: true,
         ...(rol ? { role: rol } : {}),
         ...(sindicatoId ? { syndicateId: BigInt(sindicatoId) } : {}),
       },
@@ -75,6 +74,7 @@ export class UsuariosService {
         ...(dto.telefono !== undefined && { phone: dto.telefono }),
         ...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
         ...(dto.rol !== undefined && { role: dto.rol }),
+        ...(dto.sindicatoId !== undefined && { syndicateId: BigInt(dto.sindicatoId) }),
         ...(dto.activo !== undefined && { active: dto.activo }),
       },
       select: { id: true, name: true, email: true, role: true, active: true, updatedAt: true },
@@ -85,7 +85,7 @@ export class UsuariosService {
     await this.obtenerPorId(id);
     return this.prisma.user.update({
       where: { id: BigInt(id) },
-      data: { deletedAt: new Date(), active: false },
+      data: { active: false },
       select: { id: true, name: true, email: true, deletedAt: true },
     });
   }

@@ -1,15 +1,19 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { TrasboardosService } from './trasbordos.service';
 import { CrearTrasborodoDto } from './dto/crear-trasbordo.dto';
 import { DecidirTrasborodoDto } from './dto/decidir-trasbordo.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('trasbordos')
 export class TrasboardosController {
   constructor(private readonly trasboardosService: TrasboardosService) {}
 
   @Get()
-  async obtenerTodos(@Query('estado') estado?: string) {
-    return await this.trasboardosService.obtenerTodos(estado);
+  async obtenerTodos(@CurrentUser() usuario: any, @Query('estado') estado?: string) {
+    const sindicatoId = usuario.syndicateId ?? undefined;
+    return await this.trasboardosService.obtenerTodos(estado, sindicatoId);
   }
 
   @Get(':id')

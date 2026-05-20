@@ -1,18 +1,22 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ConductoresService } from './conductores.service';
 import { CrearConductorDto } from './dto/crear-conductor.dto';
 import { ActualizarConductorDto } from './dto/actualizar-conductor.dto';
 import { ActualizarCredencialDto } from './dto/actualizar-credencial.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('conductores')
 export class ConductoresController {
   constructor(private readonly conductoresService: ConductoresService) {}
 
   @Get()
   async obtenerTodos(
-    @Query('sindicatoId') sindicatoId?: string,
+    @CurrentUser() usuario: any,
     @Query('lineaId') lineaId?: string,
   ) {
+    const sindicatoId = usuario.syndicateId ?? undefined;
     return await this.conductoresService.obtenerTodos(sindicatoId, lineaId);
   }
 
@@ -22,7 +26,8 @@ export class ConductoresController {
   }
 
   @Post()
-  async crear(@Body() dto: CrearConductorDto) {
+  async crear(@Body() dto: CrearConductorDto, @CurrentUser() usuario: any) {
+    if (usuario.syndicateId) dto.sindicatoId = usuario.syndicateId;
     return await this.conductoresService.crear(dto);
   }
 

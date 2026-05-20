@@ -1,15 +1,19 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { UsuariosService } from './usuarios.service';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('usuarios')
 export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Get()
-  async obtenerTodos(@Query('rol') rol?: string, @Query('sindicatoId') sindicatoId?: string) {
+  async obtenerTodos(@CurrentUser() usuario: any, @Query('rol') rol?: string) {
+    const sindicatoId = usuario.syndicateId ?? undefined;
     return await this.usuariosService.obtenerTodos(rol as UserRole, sindicatoId);
   }
 
@@ -19,7 +23,8 @@ export class UsuariosController {
   }
 
   @Post()
-  async crear(@Body() dto: CrearUsuarioDto) {
+  async crear(@Body() dto: CrearUsuarioDto, @CurrentUser() usuario: any) {
+    if (usuario.syndicateId) dto.sindicatoId = usuario.syndicateId;
     return await this.usuariosService.crear(dto);
   }
 

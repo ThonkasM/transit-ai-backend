@@ -37,6 +37,10 @@ export class ActualizarLineaDto {
   @IsOptional()
   imagenUrl?: string;
 
+  @IsNumber()
+  @IsOptional()
+  sindicatoId?: number;
+
   @IsBoolean()
   @IsOptional()
   activo?: boolean;

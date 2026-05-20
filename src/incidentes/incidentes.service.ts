@@ -7,12 +7,13 @@ import { RevisarIncidenteDto } from './dto/revisar-incidente.dto';
 export class IncidentesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerTodos(conductorId?: string, estado?: string, viajeId?: string) {
+  async obtenerTodos(conductorId?: string, estado?: string, viajeId?: string, sindicatoId?: string) {
     return this.prisma.incident.findMany({
       where: {
         ...(conductorId ? { driverId: BigInt(conductorId) } : {}),
         ...(estado ? { status: estado as any } : {}),
         ...(viajeId ? { tripId: BigInt(viajeId) } : {}),
+        ...(sindicatoId ? { driver: { syndicateId: BigInt(sindicatoId) } } : {}),
       },
       include: {
         driver: { include: { user: { select: { id: true, name: true } } } },
@@ -70,6 +71,6 @@ export class IncidentesService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.incident.delete({ where: { id: BigInt(id) } });
+    return this.prisma.incident.update({ where: { id: BigInt(id) }, data: { status: 'CLOSED' } });
   }
 }

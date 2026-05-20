@@ -1,5 +1,5 @@
 import { RouteDirection, RouteRecordingMethod } from '@prisma/client';
-import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class CrearGrabacionDto {
   @IsNumber()
@@ -19,9 +19,13 @@ export class CrearGrabacionDto {
   @IsEnum(RouteDirection)
   direccion: RouteDirection;
 
-  puntosGrabados: any;
+  // Se recibe como JSON string para evitar problemas con forbidNonWhitelisted
+  @IsString()
+  puntosGrabados: string;
 
-  puntosSimplificados?: any;
+  @IsString()
+  @IsOptional()
+  puntosSimplificados?: string;
 
   @IsNumber()
   @Min(0)

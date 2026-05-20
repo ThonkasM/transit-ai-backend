@@ -1,15 +1,19 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { RutasService } from './rutas.service';
 import { CrearRutaDto } from './dto/crear-ruta.dto';
 import { ActualizarRutaDto } from './dto/actualizar-ruta.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('rutas')
 export class RutasController {
   constructor(private readonly rutasService: RutasService) {}
 
   @Get()
-  async obtenerTodas(@Query('lineaId') lineaId?: string) {
-    return await this.rutasService.obtenerTodas(lineaId);
+  async obtenerTodas(@CurrentUser() usuario: any, @Query('lineaId') lineaId?: string) {
+    const sindicatoId = usuario.syndicateId ?? undefined;
+    return await this.rutasService.obtenerTodas(lineaId, sindicatoId);
   }
 
   @Get(':id')

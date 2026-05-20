@@ -76,6 +76,6 @@ export class AsignacionesService {
 
   async eliminar(id: string) {
     await this.obtenerPorId(id);
-    return this.prisma.dailyAssignment.delete({ where: { id: BigInt(id) } });
+    return this.prisma.dailyAssignment.update({ where: { id: BigInt(id) }, data: { status: 'CANCELLED' } });
   }
 }

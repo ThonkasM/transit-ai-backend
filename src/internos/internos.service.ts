@@ -11,7 +11,6 @@ export class InternosService {
     return this.prisma.internal.findMany({
       where: {
         deletedAt: null,
-        active: true,
         ...(sindicatoId ? { syndicateId: BigInt(sindicatoId) } : {}),
         ...(lineaId ? { lineId: BigInt(lineaId) } : {}),
       },
@@ -73,7 +72,7 @@ export class InternosService {
     await this.obtenerPorId(id);
     return this.prisma.internal.update({
       where: { id: BigInt(id) },
-      data: { deletedAt: new Date(), active: false },
+      data: { active: false },
     });
   }
 }

@@ -1,5 +1,5 @@
 import { UserRole } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class ActualizarUsuarioDto {
   @IsString()
@@ -19,6 +19,10 @@ export class ActualizarUsuarioDto {
   @IsEnum(UserRole)
   @IsOptional()
   rol?: UserRole;
+
+  @IsNumber()
+  @IsOptional()
+  sindicatoId?: number;
 
   @IsBoolean()
   @IsOptional()

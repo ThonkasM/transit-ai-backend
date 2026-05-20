@@ -30,6 +30,10 @@ export class ActualizarRutaDto {
   @IsOptional()
   tiempoDescansoMin?: number;
 
+  @IsNumber()
+  @IsOptional()
+  rutaGrabadaId?: number | null;
+
   @IsBoolean()
   @IsOptional()
   activo?: boolean;

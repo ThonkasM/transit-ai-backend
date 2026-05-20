@@ -9,7 +9,7 @@ export class TurnosService {
 
   async obtenerTodos() {
     return this.prisma.shift.findMany({
-      where: { deletedAt: null, active: true },
+      where: { deletedAt: null },
       include: {
         _count: { select: { assignments: true } },
       },
@@ -63,7 +63,7 @@ export class TurnosService {
     await this.obtenerPorId(id);
     return this.prisma.shift.update({
       where: { id: BigInt(id) },
-      data: { deletedAt: new Date(), active: false },
+      data: { active: false },
     });
   }
 }

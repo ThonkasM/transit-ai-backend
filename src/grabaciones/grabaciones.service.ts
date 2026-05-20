@@ -7,11 +7,12 @@ import { RevisarGrabacionDto } from './dto/revisar-grabacion.dto';
 export class GrabacionesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerTodas(lineaId?: string, estado?: string) {
+  async obtenerTodas(lineaId?: string, estado?: string, sindicatoId?: string) {
     return this.prisma.routeRecording.findMany({
       where: {
         ...(lineaId ? { lineId: BigInt(lineaId) } : {}),
         ...(estado ? { status: estado as any } : {}),
+        ...(sindicatoId ? { line: { syndicateId: BigInt(sindicatoId) } } : {}),
       },
       include: {
         line: { select: { id: true, name: true, code: true } },
@@ -44,8 +45,8 @@ export class GrabacionesService {
         driverId: dto.conductorId ? BigInt(dto.conductorId) : null,
         method: dto.metodo,
         direction: dto.direccion,
-        recordedPoints: dto.puntosGrabados,
-        simplifiedPoints: dto.puntosSimplificados ?? null,
+        recordedPoints: JSON.parse(dto.puntosGrabados),
+        simplifiedPoints: dto.puntosSimplificados ? JSON.parse(dto.puntosSimplificados) : null,
         pointCount: dto.cantidadPuntos,
         durationMinutes: dto.duracionMinutos,
         distanceKm: dto.distanciaKm,

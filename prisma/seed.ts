@@ -113,7 +113,7 @@ async function main() {
       name: 'Línea 1 — Centro / UV234',
       code: 'L1',
       description: 'Recorrido desde el centro hasta la UV234',
-      fare: 2.50,
+      fare: 2.5,
       color: '#E63946',
       operationStartTime: new Date('1970-01-01T06:00:00'),
       operationEndTime: new Date('1970-01-01T22:00:00'),
@@ -128,7 +128,7 @@ async function main() {
       name: 'Línea 2 — Plan 3000 / Terminal Bimodal',
       code: 'L2',
       description: 'Recorrido Plan 3000 a Terminal Bimodal',
-      fare: 2.50,
+      fare: 2.5,
       color: '#457B9D',
       operationStartTime: new Date('1970-01-01T05:30:00'),
       operationEndTime: new Date('1970-01-01T23:00:00'),
@@ -189,8 +189,8 @@ async function main() {
     data: {
       name: 'Terminal UV234',
       type: 'END',
-      latitude: -17.7200,
-      longitude: -63.1500,
+      latitude: -17.72,
+      longitude: -63.15,
       address: 'UV234, Santa Cruz',
       busLineId: linea1.id,
     },
@@ -325,9 +325,30 @@ async function main() {
   // Ubicaciones GPS de ejemplo
   await prisma.driverLocation.createMany({
     data: [
-      { tripId: viaje.id, latitude: -17.7833, longitude: -63.1820, heading: 90, speed: 35, recordedAt: new Date(Date.now() - 300000) },
-      { tripId: viaje.id, latitude: -17.7820, longitude: -63.1790, heading: 88, speed: 38, recordedAt: new Date(Date.now() - 180000) },
-      { tripId: viaje.id, latitude: -17.7810, longitude: -63.1760, heading: 85, speed: 40, recordedAt: new Date(Date.now() - 60000) },
+      {
+        tripId: viaje.id,
+        latitude: -17.7833,
+        longitude: -63.182,
+        heading: 90,
+        speed: 35,
+        recordedAt: new Date(Date.now() - 300000),
+      },
+      {
+        tripId: viaje.id,
+        latitude: -17.782,
+        longitude: -63.179,
+        heading: 88,
+        speed: 38,
+        recordedAt: new Date(Date.now() - 180000),
+      },
+      {
+        tripId: viaje.id,
+        latitude: -17.781,
+        longitude: -63.176,
+        heading: 85,
+        speed: 40,
+        recordedAt: new Date(Date.now() - 60000),
+      },
     ],
   });
 
@@ -350,11 +371,11 @@ async function main() {
     data: {
       userId: pasajero.id,
       alias: 'Casa → Trabajo',
-      originLatitude: -17.7900,
-      originLongitude: -63.1900,
+      originLatitude: -17.79,
+      originLongitude: -63.19,
       originLabel: 'Mi Casa',
       destinationLatitude: -17.7833,
-      destinationLongitude: -63.1820,
+      destinationLongitude: -63.182,
       destinationLabel: 'Centro',
     },
   });
