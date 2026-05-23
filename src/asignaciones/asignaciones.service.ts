@@ -74,6 +74,44 @@ export class AsignacionesService {
     });
   }
 
+  async obtenerMiAsignacionHoy(conductorUserId: string) {
+    // Busca el driver record del usuario
+    const conductor = await this.prisma.driver.findUnique({
+      where: { userId: BigInt(conductorUserId) },
+    });
+    if (!conductor) return null;
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const manana = new Date(hoy);
+    manana.setDate(manana.getDate() + 1);
+
+    return this.prisma.dailyAssignment.findFirst({
+      where: {
+        driverId: conductor.id,
+        date: { gte: hoy, lt: manana },
+        status: { not: 'CANCELLED' },
+      },
+      include: {
+        driver: { include: { user: { select: { id: true, name: true } } } },
+        internal: { select: { id: true, internalNumber: true, licensePlate: true, model: true } },
+        route: {
+          select: {
+            id: true, name: true, direction: true,
+            routeRecording: { select: { recordedPoints: true } },
+          },
+        },
+        shift: { select: { id: true, name: true } },
+        trips: {
+          where: { status: 'IN_PROGRESS' },
+          select: { id: true, status: true, startedAt: true },
+          orderBy: { startedAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+  }
+
   async eliminar(id: string) {
     await this.obtenerPorId(id);
     return this.prisma.dailyAssignment.update({ where: { id: BigInt(id) }, data: { status: 'CANCELLED' } });

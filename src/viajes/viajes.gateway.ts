@@ -71,22 +71,65 @@ export class ViajesGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const ubicacion = await this.viajesService.registrarUbicacion(dto);
 
+      // Obtener lineaId y sindicatoId para emitir a salas del admin
+      const info = await this.viajesService.obtenerInfoViajeParaEmision(dto.viajeId);
+      const lineaId = info?.assignment?.internal?.lineId?.toString();
+      const sindicatoId = info?.assignment?.syndicateId?.toString();
+
       const payload = {
         viajeId: dto.viajeId,
         latitud: dto.latitud,
         longitud: dto.longitud,
         rumbo: dto.rumbo,
         velocidad: dto.velocidad,
+        lineaId,
+        sindicatoId,
         registradoEn: ubicacion.recordedAt,
       };
 
-      // Emitir a sala del viaje específico
+      // Emitir a sala del viaje específico (pasajeros que siguen el viaje)
       this.server.to(`viaje-${dto.viajeId}`).emit('ubicacion-actualizada', payload);
+
+      // Emitir a sala de la línea (admin viendo esa línea)
+      if (lineaId) this.server.to(`linea-${lineaId}`).emit('bus-actualizado', payload);
+
+      // Emitir a sala del sindicato (admin viendo todo el sindicato)
+      if (sindicatoId) this.server.to(`sindicato-${sindicatoId}`).emit('bus-actualizado', payload);
+
+      // Emitir a sala global de admins
+      this.server.to('admin-global').emit('bus-actualizado', payload);
 
       return { exito: true, mensaje: 'Ubicación registrada y transmitida' };
     } catch (error) {
       return { exito: false, mensaje: (error as Error).message };
     }
+  }
+
+  /** Admin se suscribe a un sindicato para ver todos sus buses en tiempo real */
+  @SubscribeMessage('suscribir-sindicato')
+  async handleSuscribirSindicato(
+    @MessageBody() data: { sindicatoId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    await client.join(`sindicato-${data.sindicatoId}`);
+    return { exito: true, mensaje: `Suscrito al sindicato ${data.sindicatoId}` };
+  }
+
+  /** Admin se suscribe a la sala global para ver todos los buses */
+  @SubscribeMessage('suscribir-admin-global')
+  async handleSuscribirAdminGlobal(@ConnectedSocket() client: Socket) {
+    await client.join('admin-global');
+    return { exito: true, mensaje: 'Suscrito al canal global de admin' };
+  }
+
+  /** Desuscribir de sindicato */
+  @SubscribeMessage('desuscribir-sindicato')
+  async handleDesuscribirSindicato(
+    @MessageBody() data: { sindicatoId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    await client.leave(`sindicato-${data.sindicatoId}`);
+    return { exito: true };
   }
 
   /** Finaliza un viaje desde el conductor y notifica a todos los suscriptores */

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ViajesService } from './viajes.service';
 import { IniciarViajeDto } from './dto/iniciar-viaje.dto';
 import { FinalizarViajeDto } from './dto/finalizar-viaje.dto';
@@ -8,8 +9,13 @@ export class ViajesController {
   constructor(private readonly viajesService: ViajesService) {}
 
   @Get('activos')
-  async obtenerActivos() {
-    return await this.viajesService.obtenerActivos();
+  @UseGuards(JwtAuthGuard)
+  async obtenerActivos(
+    @Query('sindicatoId') sindicatoId?: string,
+    @Query('lineaId') lineaId?: string,
+    @Query('conductorId') conductorId?: string,
+  ) {
+    return await this.viajesService.obtenerActivos({ sindicatoId, lineaId, conductorId });
   }
 
   @Get(':id')

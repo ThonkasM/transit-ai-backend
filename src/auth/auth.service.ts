@@ -77,6 +77,49 @@ export class AuthService {
     return this.generarTokens(stored.user.id.toString(), stored.user.email, stored.user.role);
   }
 
+  async googleLogin(idToken: string) {
+    // Verifica el token con Google sin dependencias externas
+    const resp = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`,
+    );
+    if (!resp.ok) throw new UnauthorizedException('Token de Google inválido');
+
+    const info = (await resp.json()) as {
+      sub: string;
+      email: string;
+      name: string;
+      picture: string;
+      aud: string;
+    };
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (clientId && info.aud !== clientId) {
+      throw new UnauthorizedException('Token no pertenece a esta aplicación');
+    }
+
+    let user = await this.prisma.user.findUnique({ where: { email: info.email } });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email: info.email,
+          name: info.name,
+          passwordHash: '',
+          avatarUrl: info.picture,
+          role: 'PASSENGER',
+        },
+      });
+    }
+
+    if (!user.active) throw new UnauthorizedException('Cuenta inactiva');
+
+    const tokens = await this.generarTokens(user.id.toString(), user.email, user.role);
+    return {
+      usuario: { id: user.id.toString(), nombre: user.name, email: user.email, rol: user.role },
+      ...tokens,
+    };
+  }
+
   async logout(userId: string) {
     await this.prisma.refreshToken.updateMany({
       where: { userId: BigInt(userId), revokedAt: null },

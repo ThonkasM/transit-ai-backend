@@ -8,20 +8,42 @@ import { FinalizarViajeDto } from './dto/finalizar-viaje.dto';
 export class ViajesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async obtenerActivos() {
+  async obtenerActivos(filtros?: { sindicatoId?: string; lineaId?: string; conductorId?: string }) {
     return this.prisma.trip.findMany({
-      where: { status: 'IN_PROGRESS' },
+      where: {
+        status: 'IN_PROGRESS',
+        ...(filtros?.sindicatoId ? { assignment: { syndicateId: BigInt(filtros.sindicatoId) } } : {}),
+        ...(filtros?.lineaId ? { assignment: { internal: { lineId: BigInt(filtros.lineaId) } } } : {}),
+        ...(filtros?.conductorId ? { driverId: BigInt(filtros.conductorId) } : {}),
+      },
       include: {
         assignment: {
           include: {
             driver: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
-            internal: { select: { id: true, internalNumber: true, licensePlate: true, model: true } },
+            internal: {
+              select: { id: true, internalNumber: true, licensePlate: true, model: true,
+                line: { select: { id: true, name: true, code: true, color: true } },
+              },
+            },
             route: { select: { id: true, name: true, direction: true } },
+            syndicate: { select: { id: true, name: true } },
           },
         },
-        locations: {
-          orderBy: { recordedAt: 'desc' },
-          take: 1,
+        locations: { orderBy: { recordedAt: 'desc' }, take: 1 },
+      },
+    });
+  }
+
+  async obtenerInfoViajeParaEmision(viajeId: string) {
+    return this.prisma.trip.findUnique({
+      where: { id: BigInt(viajeId) },
+      select: {
+        id: true,
+        assignment: {
+          select: {
+            syndicateId: true,
+            internal: { select: { lineId: true } },
+          },
         },
       },
     });

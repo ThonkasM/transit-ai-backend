@@ -10,6 +10,11 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class AsignacionesController {
   constructor(private readonly asignacionesService: AsignacionesService) {}
 
+  @Get('mi-asignacion-hoy')
+  async obtenerMiAsignacionHoy(@CurrentUser() usuario: any) {
+    return await this.asignacionesService.obtenerMiAsignacionHoy(usuario.id);
+  }
+
   @Get()
   async obtenerTodos(
     @CurrentUser() usuario: any,

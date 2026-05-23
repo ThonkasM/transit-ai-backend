@@ -66,9 +66,11 @@ export type Segmento = SegmentoBus | SegmentoCaminata;
 export interface OpcionRuta {
   segmentos: Segmento[];
   tiempoTotalMin: number;
+  tiempoEsperaMin: number;
   distanciaTotalKm: number;
   caminataMetros: number;
   transbordos: number;
+  costoTotal: number;
 }
 
 // ─── Helpers geoespaciales ────────────────────────────────────────────────────
@@ -325,6 +327,34 @@ export class PlanificadorService {
     return resultado;
   }
 
+  // ─── Estima tiempo de espera basado en buses activos ─────────────────────────
+  private async estimarTiempoEspera(lineaId: string, embarqueLat: number, embarqueLng: number): Promise<number> {
+    const viajesActivos = await this.prisma.trip.findMany({
+      where: {
+        status: 'IN_PROGRESS',
+        assignment: { internal: { lineId: BigInt(lineaId) } },
+      },
+      include: { locations: { orderBy: { recordedAt: 'desc' }, take: 1 } },
+    });
+
+    if (viajesActivos.length === 0) {
+      const hora = new Date().getHours();
+      if ((hora >= 7 && hora <= 9) || (hora >= 17 && hora <= 19)) return 5;
+      if (hora >= 6 && hora <= 22) return 10;
+      return 20;
+    }
+
+    let minEspera = Infinity;
+    for (const viaje of viajesActivos) {
+      const loc = viaje.locations[0];
+      if (!loc) continue;
+      const dist = haversine(Number(loc.latitude), Number(loc.longitude), embarqueLat, embarqueLng);
+      const t = Math.ceil(dist / VELOCIDAD_BUS_MPM);
+      if (t < minEspera) minEspera = t;
+    }
+    return minEspera === Infinity ? 10 : Math.min(minEspera, 30);
+  }
+
   // ─── Algoritmo principal ─────────────────────────────────────────────────────
   async calcularRuta(
     origenLat: number, origenLng: number,
@@ -396,13 +426,19 @@ export class PlanificadorService {
         );
       }
 
-      const tiempoTotal = segs.reduce((s, seg) => s + seg.tiempoMin, 0);
+      const tiempoViaje = segs.reduce((s, seg) => s + seg.tiempoMin, 0);
+      const espera = await this.estimarTiempoEspera(
+        linea.id, linea.puntos[idxOrigen][0], linea.puntos[idxOrigen][1],
+      );
+      const costo = linea.tarifa;
       opciones.push({
         segmentos: segs,
-        tiempoTotalMin: tiempoTotal,
+        tiempoTotalMin: tiempoViaje + espera,
+        tiempoEsperaMin: espera,
         distanciaTotalKm: Math.round(distBus * 100) / 100,
         caminataMetros: Math.round(caminataTotal),
         transbordos: 0,
+        costoTotal: costo,
       });
     }
 
@@ -508,13 +544,19 @@ export class PlanificadorService {
             );
           }
 
-          const tiempoTotal = segs.reduce((s, seg) => s + seg.tiempoMin, 0);
+          const tiempoViaje2 = segs.reduce((s, seg) => s + seg.tiempoMin, 0);
+          const espera2 = await this.estimarTiempoEspera(
+            l1.id, l1.puntos[i1O][0], l1.puntos[i1O][1],
+          );
+          const costo2 = l1.tarifa + l2.tarifa;
           opciones.push({
             segmentos: segs,
-            tiempoTotalMin: tiempoTotal,
+            tiempoTotalMin: tiempoViaje2 + espera2,
+            tiempoEsperaMin: espera2,
             distanciaTotalKm: Math.round((dist1 + dist2) * 100) / 100,
             caminataMetros: Math.round(caminataTotal),
             transbordos: 1,
+            costoTotal: costo2,
           });
         }
       }
@@ -524,13 +566,13 @@ export class PlanificadorService {
     if (opciones.length === 0) {
       const distTotal = haversine(origenLat, origenLng, destinoLat, destinoLng);
       opciones.push({
-        segmentos: [
-          mkCaminata(origenLat, origenLng, destinoLat, destinoLng, distTotal),
-        ],
+        segmentos: [mkCaminata(origenLat, origenLng, destinoLat, destinoLng, distTotal)],
         tiempoTotalMin: Math.ceil(distTotal / VELOCIDAD_CAMINATA_MPM),
+        tiempoEsperaMin: 0,
         distanciaTotalKm: Math.round(distTotal / 10) / 100,
         caminataMetros: Math.round(distTotal),
         transbordos: 0,
+        costoTotal: 0,
       });
     }
 
