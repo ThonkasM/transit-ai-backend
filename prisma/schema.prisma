@@ -169,6 +169,28 @@ enum AIPredictionType {
   DEMAND_FORECAST // Pronóstico de demanda
 }
 
+// ─── BLOCKCHAIN / BILLETERA ────────────────────────────────────────────────────
+
+/// Dueño de una billetera on-chain.
+enum WalletKind {
+  USER // Billetera de un pasajero
+  SYNDICATE // Billetera de un sindicato (recibe la distribución)
+}
+
+/// Categoría del pasajero — determina el descuento aplicado on-chain.
+enum WalletCategory {
+  GENERAL
+  ESTUDIANTE
+  ADULTO_MAYOR
+}
+
+/// Tipo de movimiento registrado en la billetera (espejo del evento on-chain).
+enum WalletTxType {
+  TOPUP // Recarga de saldo
+  FARE_PAYMENT // Pago de pasaje
+  PASS_PURCHASE // Compra de abono/pase mensual
+}
+
 // ============================================================================
 // ENTIDADES PRINCIPALES
 // ============================================================================
@@ -196,6 +218,7 @@ model Syndicate {
   buses       Internal[]
   lines       BusLine[]
   assignments DailyAssignment[]
+  wallet      Wallet?
 
   @@map("syndicates")
 }
@@ -235,6 +258,7 @@ model User {
   reviewedDeviations    RouteDeviation[]
   reviewedIncidents     Incident[]            @relation("IncidentReviewer")
   refreshTokens         RefreshToken[]
+  wallet                Wallet?
 
   @@index([syndicateId])
   @@index([role])
@@ -808,6 +832,89 @@ model RefreshToken {
   @@index([userId])
   @@index([token])
   @@map("refresh_tokens")
+}
+
+// ============================================================================
+// BLOCKCHAIN — BILLETERAS, TRANSACCIONES Y ABONOS
+// ============================================================================
+
+/// Billetera digital — Vincula una cuenta (usuario o sindicato) con una
+/// dirección on-chain. Modelo custodial: el backend guarda la llave privada
+/// cifrada. El saldo real vive en el contrato; aquí solo se espeja la metadata.
+model Wallet {
+  id           BigInt         @id @default(autoincrement())
+  kind         WalletKind     @default(USER)
+  userId       BigInt?        @unique // Si es billetera de un pasajero
+  syndicateId  BigInt?        @unique // Si es billetera de un sindicato
+  address      String         @unique @db.VarChar(42) // Dirección 0x...
+  encryptedKey String         @db.Text // Llave privada cifrada (AES-256-GCM)
+  category     WalletCategory @default(GENERAL) // Espejo de la categoría on-chain
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relaciones
+  user         User?               @relation(fields: [userId], references: [id])
+  syndicate    Syndicate?          @relation(fields: [syndicateId], references: [id])
+  transactions WalletTransaction[]
+  passes       TransitPass[]
+
+  @@index([address])
+  @@map("wallets")
+}
+
+/// Transacción de billetera — Espejo en BD de un evento on-chain.
+/// La fuente de verdad es la blockchain (txHash); esto acelera el historial.
+model WalletTransaction {
+  id            BigInt       @id @default(autoincrement())
+  walletId      BigInt // Billetera del titular del movimiento
+  type          WalletTxType
+  amountCents   Int // Monto del movimiento en centavos de Bs
+  baseFareCents Int? // Tarifa base antes del descuento (en pagos de pasaje)
+  discountBps   Int? // Descuento aplicado en puntos base (5000 = 50%)
+  counterparty  String?      @db.VarChar(42) // Dirección destino (sindicato, etc.)
+  lineId        BigInt? // Línea asociada (si aplica)
+  txHash        String       @db.VarChar(66) // Hash de la transacción on-chain
+  blockNumber   Int? // Número de bloque
+  metadata      Json? // Detalle del reparto u otros datos
+  createdAt     DateTime     @default(now())
+
+  // Relaciones
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+  @@index([txHash])
+  @@map("wallet_transactions")
+}
+
+/// Configuración editable del sistema (clave-valor). Ej: parámetros del abono.
+model AppSetting {
+  key       String   @id @db.VarChar(60)
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+/// Abono / Pase mensual — Registro de un pase pagado on-chain (sin NFT).
+/// Otorga viajes durante un período de validez.
+model TransitPass {
+  id          BigInt   @id @default(autoincrement())
+  walletId    BigInt // Billetera del pasajero
+  lineId      BigInt? // Línea cubierta (NULL = todas)
+  priceCents  Int // Precio pagado en centavos de Bs
+  validFrom   DateTime @default(now())
+  validUntil  DateTime // Vencimiento del abono
+  txHash      String   @db.VarChar(66)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Relaciones
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([validUntil])
+  @@map("transit_passes")
 }
 
 // ============================================================================

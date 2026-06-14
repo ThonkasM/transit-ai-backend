@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { IaService } from '../ia/ia.service';
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const RADIO_BUSQUEDA_M = 600; // metros: radio para considerar que una línea "sirve" un punto
@@ -209,7 +210,10 @@ function mkCaminata(
 
 @Injectable()
 export class PlanificadorService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly iaService: IaService,
+  ) {}
 
   async obtenerLineasParaMapa(): Promise<LineaConPuntos[]> {
     try {
@@ -329,30 +333,8 @@ export class PlanificadorService {
 
   // ─── Estima tiempo de espera basado en buses activos ─────────────────────────
   private async estimarTiempoEspera(lineaId: string, embarqueLat: number, embarqueLng: number): Promise<number> {
-    const viajesActivos = await this.prisma.trip.findMany({
-      where: {
-        status: 'IN_PROGRESS',
-        assignment: { internal: { lineId: BigInt(lineaId) } },
-      },
-      include: { locations: { orderBy: { recordedAt: 'desc' }, take: 1 } },
-    });
-
-    if (viajesActivos.length === 0) {
-      const hora = new Date().getHours();
-      if ((hora >= 7 && hora <= 9) || (hora >= 17 && hora <= 19)) return 5;
-      if (hora >= 6 && hora <= 22) return 10;
-      return 20;
-    }
-
-    let minEspera = Infinity;
-    for (const viaje of viajesActivos) {
-      const loc = viaje.locations[0];
-      if (!loc) continue;
-      const dist = haversine(Number(loc.latitude), Number(loc.longitude), embarqueLat, embarqueLng);
-      const t = Math.ceil(dist / VELOCIDAD_BUS_MPM);
-      if (t < minEspera) minEspera = t;
-    }
-    return minEspera === Infinity ? 10 : Math.min(minEspera, 30);
+    const resultado = await this.iaService.predecirETALinea(lineaId, embarqueLat, embarqueLng);
+    return resultado.etaMin;
   }
 
   // ─── Algoritmo principal ─────────────────────────────────────────────────────

@@ -21,6 +21,9 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { PreferenciasModule } from './preferencias/preferencias.module';
 import { FavoritosModule } from './favoritos/favoritos.module';
 import { PlanificadorModule } from './planificador/planificador.module';
+import { IaModule } from './ia/ia.module';
+import { BlockchainModule } from './blockchain/blockchain.module';
+import { BilleteraModule } from './billetera/billetera.module';
 
 @Module({
   imports: [
@@ -44,6 +47,9 @@ import { PlanificadorModule } from './planificador/planificador.module';
     PreferenciasModule,
     FavoritosModule,
     PlanificadorModule,
+    IaModule,
+    BlockchainModule,
+    BilleteraModule,
   ],
   controllers: [AppController],
   providers: [AppService],

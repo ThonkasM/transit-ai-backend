@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Turno } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearTurnoDto } from './dto/crear-turno.dto';
 import { ActualizarTurnoDto } from './dto/actualizar-turno.dto';
@@ -35,7 +36,7 @@ export class TurnosService {
   async crear(dto: CrearTurnoDto) {
     return this.prisma.shift.create({
       data: {
-        name: dto.nombre,
+        name: dto.nombre as Turno,
         daysOfWeek: dto.diasSemana,
         startTime: new Date(`1970-01-01T${dto.horaInicio}`),
         endTime: new Date(`1970-01-01T${dto.horaFin}`),
@@ -49,7 +50,7 @@ export class TurnosService {
     return this.prisma.shift.update({
       where: { id: BigInt(id) },
       data: {
-        ...(dto.nombre !== undefined && { name: dto.nombre }),
+        ...(dto.nombre !== undefined && { name: dto.nombre as Turno }),
         ...(dto.diasSemana !== undefined && { daysOfWeek: dto.diasSemana }),
         ...(dto.horaInicio !== undefined && { startTime: new Date(`1970-01-01T${dto.horaInicio}`) }),
         ...(dto.horaFin !== undefined && { endTime: new Date(`1970-01-01T${dto.horaFin}`) }),

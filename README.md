@@ -1,7 +1,7 @@
 # Transit AI — Backend API
 
-Sistema de transporte público inteligente con seguimiento GPS en tiempo real, planificación de rutas e IA.  
-**Stack:** NestJS · Prisma · PostgreSQL · Socket.IO
+Sistema de transporte público inteligente con seguimiento GPS en tiempo real, planificación de rutas, IA y pagos sobre blockchain.  
+**Stack:** NestJS · Prisma · PostgreSQL · Socket.IO · Hardhat/Solidity (billetera)
 
 ---
 
@@ -30,8 +30,16 @@ El servidor corre en **`http://localhost:4000`** por defecto.
 | `PORT` | Puerto del servidor (default: `4000`) | ❌ |
 | `GOOGLE_CLIENT_ID` | Client ID para login con Google OAuth | ❌ |
 | `GOOGLE_MAPS_API_KEY` | API Key para ETA real y tráfico (Distance Matrix API) | ❌ |
+| `BLOCKCHAIN_RPC_URL` | URL del nodo blockchain (default: `http://127.0.0.1:8545`) | ⛓️ |
+| `BLOCKCHAIN_NETWORK` | Red desplegada (default: `localhost`) | ⛓️ |
+| `BLOCKCHAIN_OWNER_KEY` | Llave privada del backend (owner del contrato) | ⛓️ |
+| `WALLET_ENCRYPTION_KEY` | Clave para cifrar las llaves privadas custodiales | ⛓️ |
+| `BILLETERA_QR_SECRET` | Secreto para firmar los tokens QR de pago | ⛓️ |
+| `ABONO_VIAJES` | Viajes equivalentes que cubre un abono (default: `40`) | ❌ |
+| `ABONO_DIAS` | Días de validez del abono (default: `30`) | ❌ |
 
-> Sin `GOOGLE_MAPS_API_KEY` el sistema usa cálculo propio de ETA basado en velocidad GPS de la flota.
+> Sin `GOOGLE_MAPS_API_KEY` el sistema usa cálculo propio de ETA basado en velocidad GPS de la flota.  
+> ⛓️ = requeridas solo para el módulo de **Billetera / Blockchain**. Si faltan, ese módulo se deshabilita solo (los `/billetera/*` responden 503) y el resto del backend funciona normal. Ver **[BLOCKCHAIN.md](BLOCKCHAIN.md)** para el setup completo.
 
 ---
 
@@ -554,6 +562,94 @@ El token se obtiene desde `POST /auth/login` o `POST /auth/google`.
 
 ---
 
+### ⛓️ Billetera / Blockchain — `/billetera` 🔒
+
+Billeteras digitales y pago de pasajes sobre una blockchain local (Hardhat + Solidity).
+El saldo es un token `TRC` (1 unidad = 1 centavo de Bs) que vive en el smart contract
+`TransitPay`. Modelo **custodial**: el backend firma las transacciones por el usuario.
+Requiere el nodo Hardhat corriendo y el contrato desplegado — ver **[BLOCKCHAIN.md](BLOCKCHAIN.md)**.
+
+#### Billetera y operaciones del pasajero
+
+| Método | Ruta | Body | Descripción |
+|---|---|---|---|
+| POST | `/billetera` | — | Crea (si no existe) y devuelve la billetera del usuario |
+| GET | `/billetera` | — | Saldo y datos de la billetera |
+| POST | `/billetera/recargar` | `{ monto, metodo?, referencia? }` | Recarga saldo por medio tradicional (tarjeta/transferencia) |
+| POST | `/billetera/pagar` | `{ lineaId }` | Paga el pasaje de una línea desde la billetera |
+| GET | `/billetera/qr` | — | Genera el QR de pago del pasajero (válido 90s) |
+| POST | `/billetera/pagar-qr` | `{ qr, lineaId }` | El chofer escanea el QR del pasajero y cobra |
+| POST | `/billetera/abono` | `{ lineaId? }` | Compra un abono / pase mensual |
+| GET | `/billetera/abono` | — | Abono vigente del usuario |
+| GET | `/billetera/historial` | — | Últimas 50 transacciones de la billetera |
+
+**Respuesta de `GET /billetera`:**
+```json
+{ "address": "0x70997...79C8", "categoria": "ESTUDIANTE", "saldoBs": 48.75, "saldoCentavos": 4875 }
+```
+
+**Respuesta de `POST /billetera/pagar` (o `/pagar-qr`):**
+```json
+{
+  "ok": true,
+  "linea": "Línea 1",
+  "tarifaBaseBs": 2.50,
+  "descuentoBs": 1.25,
+  "tarifaPagadaBs": 1.25,
+  "categoria": "ESTUDIANTE",
+  "saldoBs": 47.50,
+  "txHash": "0x...",
+  "blockNumber": 12
+}
+```
+
+> Cada pago se ejecuta on-chain en una sola transacción que aplica el descuento y
+> reparte automáticamente el monto: **sindicato / chofer / sistema** (ver config).
+
+#### Configuración del sistema (solo `SUPERADMIN` / `SINDICATO_ADMIN`)
+
+| Método | Ruta | Body | Descripción |
+|---|---|---|---|
+| GET | `/billetera/config` | — | Descuentos, reparto y parámetros del abono vigentes |
+| PATCH | `/billetera/config/descuento` | `{ categoria, porcentaje }` | Cambia el descuento de una categoría (on-chain, en vivo) |
+| PATCH | `/billetera/config/reparto` | `{ sindicato, chofer }` | Cambia el reparto del pasaje en % (on-chain, en vivo) |
+| POST | `/billetera/:usuarioId/categoria` | `{ categoria }` | Asigna la categoría de descuento a un usuario |
+
+**Respuesta de `GET /billetera/config`:**
+```json
+{
+  "descuentos": { "GENERAL": 0, "ESTUDIANTE": 50, "ADULTO_MAYOR": 30 },
+  "reparto": { "sindicatoPct": 80, "choferPct": 15, "sistemaPct": 5 },
+  "abono": { "viajes": 40, "dias": 30 }
+}
+```
+
+**Ejemplos de body:**
+```json
+// PATCH /billetera/config/descuento
+{ "categoria": "ESTUDIANTE", "porcentaje": 60 }
+
+// PATCH /billetera/config/reparto   (sindicato + chofer ≤ 100; el resto es del sistema)
+{ "sindicato": 70, "chofer": 20 }
+
+// POST /billetera/:usuarioId/categoria
+{ "categoria": "ADULTO_MAYOR" }
+```
+
+**Qué es configurable:**
+
+| Parámetro | Cómo se cambia |
+|---|---|
+| Tarifa de cada línea | `PATCH /lineas/:id` (campo `tarifa`) |
+| Descuentos por categoría | `PATCH /billetera/config/descuento` (on-chain) |
+| Reparto sindicato/chofer/sistema | `PATCH /billetera/config/reparto` (on-chain) |
+| Abono (viajes y validez) | `.env` → `ABONO_VIAJES`, `ABONO_DIAS` |
+
+**Categorías de descuento:** `GENERAL` (0%) | `ESTUDIANTE` (50%) | `ADULTO_MAYOR` (30%) — valores por defecto, editables.  
+**Tipos de transacción (historial):** `TOPUP` | `FARE_PAYMENT` | `PASS_PURCHASE`
+
+---
+
 ## Roles del sistema
 
 | Rol | Descripción |
@@ -580,4 +676,7 @@ IncidentStatus:       PENDING | IN_REVIEW | RESOLVED | CLOSED
 NotificationType:     SERVICE_ALERT | ROUTE_DEVIATION | MAINTENANCE | INCIDENT | PAYMENT | SYSTEM
 TransferStatus:       SUGGESTED | ACCEPTED | REJECTED | COMPLETED
 Turno:                MANANA | TARDE | NOCTURNO
+WalletKind:           USER | SYNDICATE
+WalletCategory:       GENERAL | ESTUDIANTE | ADULTO_MAYOR
+WalletTxType:         TOPUP | FARE_PAYMENT | PASS_PURCHASE
 ```
